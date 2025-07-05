@@ -1,0 +1,10 @@
+#root {
+  margin: 0;
+  padding: 2rem;
+}
+
+.logo {
+  height: 6em;
+  will-change: filter;
+  transition: filter 300ms;
+}
