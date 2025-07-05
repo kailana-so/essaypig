@@ -33,7 +33,7 @@ export default function Login() {
 
   return (
     <div className="login-container">
-      <h4>{isSignUp ? 'Create' : 'You know the rules...'}</h4>
+      <h4>{isSignUp ? 'Join us' : 'You know the rules...'}</h4>
       <div className="login-form">
         <input 
           className="login-input"
