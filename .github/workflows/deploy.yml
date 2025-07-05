@@ -20,10 +20,10 @@ jobs:
       - name: Deploy to Droplet
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} << 'EOF'
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             cd /var/www/essaypig
             git pull origin main
             yarn install --frozen-lockfile
             yarn build
-            # Optional: restart your web server if needed
-            # sudo systemctl restart nginx
           EOF
