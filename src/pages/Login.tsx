@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../services/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../services/firebase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -11,12 +12,21 @@ export default function Login() {
   const handleAuth = async () => {
     try {
       if (isSignUp) {
+        // Check if user is in the allowed users list
+        const ref = doc(db, 'allowedUsers', email);
+        const snap = await getDoc(ref);
+
+        if (!snap.exists()) {
+          setError("Sorry, your not on the list...");
+          return;
+        }
+
         await createUserWithEmailAndPassword(auth, email, pass);
       } else {
         await signInWithEmailAndPassword(auth, email, pass);
       }
     } catch (err: any) {
-      setError(isSignUp ? "Oops, something went wrong with signup." : "Damn, that's not right.");
+      setError(err.message || "Damn, that's not right.");
     }
   };
 
