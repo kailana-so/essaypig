@@ -17,7 +17,7 @@ export default function Login() {
         const snap = await getDoc(ref);
 
         if (!snap.exists()) {
-          setError("Sorry, your not on the list...");
+          setError("Sorry, you're not on the list...yet.");
           return;
         }
 
@@ -26,6 +26,7 @@ export default function Login() {
         await signInWithEmailAndPassword(auth, email, pass);
       }
     } catch (err: any) {
+      console.log(err);
       setError(err.message || "Damn, that's not right.");
     }
   };
