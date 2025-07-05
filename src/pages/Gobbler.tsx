@@ -90,7 +90,7 @@ export default function Gobbler({ user }: { user: User }) {
               type="text"
               value={url}
               onChange={e => setUrl(e.target.value)}
-              placeholder="Paste a link or PDF URL"
+              placeholder="Paste an essay link"
               style={{ width: '100%', border: '1px solid #ddd', borderRadius: '4px', padding: '0.7rem'}}
             />
           ) : (
