@@ -1,7 +1,7 @@
 # Essay Pig
 
 An automated book club service.  
-Join a group, upload links or PDFs — and **Piggy** will send out a random essay or synopsis to the group at the chossen interval.
+Join a group, upload links or PDFs — and **Piggy** will send out a random essay with a synopsis to the group at the chosen interval.
 
 ![Essay Pig Banner](./public/essaypiggy-banner.png)
 
