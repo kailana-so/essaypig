@@ -19,6 +19,9 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
+      DS_API_URL: ${{ secrets.DS_API_URL }}
+      DS_API_KEY: ${{ secrets.DS_API_KEY }}
+      DS_MODEL: ${{ secrets.DS_MODEL }}
 
     steps:
       - name: Checkout code
@@ -50,6 +53,9 @@ jobs:
             echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> server/.env
             echo "AWS_BUCKET_NAME=$AWS_BUCKET_NAME" >> server/.env
             echo "AWS_REGION=$AWS_REGION" >> server/.env
+            echo "DS_API_URL=$DS_API_URL" >> server/.env
+            echo "DS_API_KEY=$DS_API_KEY" >> server/.env
+            echo "DS_MODEL=$DS_MODEL" >> server/.env
 
             echo "Building frontend..."
             git pull origin main
@@ -69,6 +75,9 @@ jobs:
             AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
             AWS_BUCKET_NAME="$AWS_BUCKET_NAME" \
             AWS_REGION="$AWS_REGION" \
+            DS_API_URL="$DS_API_URL" \
+            DS_API_KEY="$DS_API_KEY" \
+            DS_MODEL="$DS_MODEL" \
             yarn build
             pm2 restart essaypig-server || pm2 start dist/index.js --name essaypig-server
             cd ..
