@@ -49,11 +49,7 @@ export default function Gobbler() {
       setError("Not much to that one.");
       return;
     }
-    // if (mode === 'file' && !file) {
-    //   setError("Not much to that one.");
-    //   return;
-    // }
-    
+
     setSubmitting(true);
     setMessage("");
     setError("");
