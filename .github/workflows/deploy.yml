@@ -46,6 +46,9 @@ jobs:
             nvm install 18
             nvm use 18
 
+            # Set Node.js memory limits to prevent OOM
+            export NODE_OPTIONS="--max-old-space-size=2048"
+
             corepack enable
             corepack prepare yarn@4.9.2 --activate
 
@@ -80,12 +83,12 @@ jobs:
             npm install -g pm2
 
             echo "Building frontend..."
-            yarn install
+            yarn install --network-timeout 100000
             yarn build
 
             echo "Building server..."
             cd server
-            yarn install
+            yarn install --network-timeout 100000
             yarn build
             
             echo "Starting server with PM2..."
