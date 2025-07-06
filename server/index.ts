@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load .env from server directory (where it's created during deployment)
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 import cors from 'cors';
 import presignRouter from './routes/presign';
 import summarisepigRouter from './routes/summarypig';

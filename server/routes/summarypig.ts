@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
 import multer from 'multer';
 import pdfParse from 'pdf-parse';
+
+// Load .env from server directory (where it's created during deployment)
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const router = Router();
 const upload = multer();

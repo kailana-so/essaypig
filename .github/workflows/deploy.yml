@@ -96,10 +96,7 @@ jobs:
           
           echo "Starting server with PM2..."
           pm2 restart server || pm2 start server/dist/index.js --name server
-          
-          echo "Cleaning up frontend .env"
-          rm -f .env
-          
+    
           echo "✅ Deployment complete"
           EOF
           
