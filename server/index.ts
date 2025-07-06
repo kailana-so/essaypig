@@ -8,8 +8,7 @@ import { scheduleMonthlyBBTC, scheduleMonthlyBITEXT } from './jobs/scheduler';
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, './.env') });
-
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const port = process.env.PORT || 3001;
