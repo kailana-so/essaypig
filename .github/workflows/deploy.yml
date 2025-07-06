@@ -38,7 +38,7 @@ jobs:
       - name: Deploy via SSH
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<'EOF'
-            set -e  # Exit on any error
+            set -e
             
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -46,11 +46,20 @@ jobs:
             nvm install 18
             nvm use 18
 
-            # Set Node.js memory limits to prevent OOM
-            export NODE_OPTIONS="--max-old-space-size=2048"
-
+            # Enable Corepack + Yarn v4
             corepack enable
             corepack prepare yarn@4.9.2 --activate
+
+            # Add 2GB swap to prevent OOM
+            sudo swapon --show | grep -q '/swapfile' || (
+              echo "Creating 2G swap..."
+              sudo fallocate -l 2G /swapfile
+              sudo chmod 600 /swapfile
+              sudo mkswap /swapfile
+              sudo swapon /swapfile
+            )
+
+            export NODE_OPTIONS="--max-old-space-size=2048"
 
             cd /var/www/essaypig
 
@@ -82,22 +91,20 @@ jobs:
             echo "Installing PM2 globally..."
             npm install -g pm2
 
+            echo "Installing monorepo deps..."
+            yarn install --immutable
+
             echo "Building frontend..."
-            yarn install --network-timeout 100000
-            yarn build
+            yarn workspace client build
 
             echo "Building server..."
-            cd server
-            yarn install --network-timeout 100000
-            yarn build
-            
-            echo "Starting server with PM2..."
-            pm2 restart essaypig-server || pm2 start dist/index.js --name essaypig-server
-            
-            cd ..
+            yarn workspace server build
 
-            echo "Cleaning up frontend .env file (keeping server .env for runtime)"
+            echo "Starting server with PM2..."
+            pm2 restart essaypig-server || pm2 start server/dist/index.js --name essaypig-server
+
+            echo "Cleaning up frontend .env"
             rm -f .env
-            
-            echo "Deployment completed successfully!"
+
+            echo "Deployment successful."
           EOF
