@@ -7,6 +7,19 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    env:
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,65 +30,40 @@ jobs:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
 
       - name: Deploy via SSH
-        env:
-          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<EOF
-            export VITE_FIREBASE_API_KEY="$VITE_FIREBASE_API_KEY"
-            export VITE_FIREBASE_AUTH_DOMAIN="$VITE_FIREBASE_AUTH_DOMAIN"
-            export VITE_FIREBASE_PROJECT_ID="$VITE_FIREBASE_PROJECT_ID"
-            export VITE_FIREBASE_STORAGE_BUCKET="$VITE_FIREBASE_STORAGE_BUCKET"
-            export VITE_FIREBASE_MESSAGING_SENDER_ID="$VITE_FIREBASE_MESSAGING_SENDER_ID"
-            export VITE_FIREBASE_APP_ID="$VITE_FIREBASE_APP_ID"
-      
-            export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
-            export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
-            export AWS_BUCKET_NAME="$AWS_BUCKET_NAME"
-            export AWS_REGION="$AWS_REGION"
-      
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<'SSH_EOF'
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
             cd /var/www/essaypig
-      
+
             echo "Creating frontend .env"
-            cat <<EOT > .env
-            VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY
-            VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN
-            VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID
-            VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET
-            VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID
-            VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID
-            EOT
-            
-                  echo "Creating backend .env"
-                  cat <<EOT > server/.env
-            AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-            AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-            AWS_BUCKET_NAME=$AWS_BUCKET_NAME
-            AWS_REGION=$AWS_REGION
-            EOT
-      
+            echo "VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY" > .env
+            echo "VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN" >> .env
+            echo "VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID" >> .env
+            echo "VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET" >> .env
+            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID" >> .env
+            echo "VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID" >> .env
+
+            echo "Creating backend .env"
+            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" > server/.env
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> server/.env
+            echo "AWS_BUCKET_NAME=$AWS_BUCKET_NAME" >> server/.env
+            echo "AWS_REGION=$AWS_REGION" >> server/.env
+
             echo "Building frontend..."
             git pull origin main
             yarn install --frozen-lockfile
             yarn build
-      
+
             echo "Building server..."
             cd server
             yarn install --frozen-lockfile
             yarn build
             pm2 restart essaypig-server || pm2 start dist/index.js --name essaypig-server
             cd ..
-      
+
             echo "Cleaning up .env files"
             rm .env
             rm server/.env
-          EOF
-      
+          SSH_EOF
