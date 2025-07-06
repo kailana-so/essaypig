@@ -1,7 +1,10 @@
-import 'dotenv/config';
 import { MONTHLY } from '../utils/constants';
 import { Resend } from 'resend';
+import dotenv from 'dotenv';
+import path from 'path';
 
+// Load .env from server directory (where it's created during deployment)
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 console.log('RESEND:', process.env.RESEND_API_KEY);
 const resend = new Resend(process.env.RESEND_API_KEY);
 
