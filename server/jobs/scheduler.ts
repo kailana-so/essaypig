@@ -73,9 +73,9 @@ export function scheduleMonthlyBBTC() {
         console.error('[BBTC] Some emails failed to send:', failed);
       } else {
         console.log('[BBTC] All emails sent successfully');
-        await db.collection(RESOURCES_COLLECTION).doc(id!).update({
-          bbtc: true,
-        });
+        // await db.collection(RESOURCES_COLLECTION).doc(id!).update({
+        //   bbtc: true,
+        // });
         console.log(`[BBTC] Marked resource ${id} as bbtc: true`);
       }
     } catch (err) {
