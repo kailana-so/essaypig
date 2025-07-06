@@ -6,7 +6,7 @@ import path from 'path';
 
 const router = Router();
 
-dotenv.config({ path: path.resolve(__dirname, '../server/.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
