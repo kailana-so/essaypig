@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import presignRouter from './routes/presign';
 import summarisepigRouter from './routes/summarypig';
+import welcomeEmailRouter from './routes/welcomeEmail';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -12,6 +13,7 @@ app.use(express.json());
 
 app.use('/api/presign', presignRouter);
 app.use('/api/summarypig', summarisepigRouter);
+app.use('/api/welcomeEmail', welcomeEmailRouter);
 
 app.listen(port, () => {
   console.log(`\n🐷 🟢 🐷  Server running on http://localhost:${port}`);
