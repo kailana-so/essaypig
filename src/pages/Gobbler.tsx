@@ -66,9 +66,9 @@ export default function Gobbler() {
         });
 
         const { summary } = await summaryRes.json();
-        const parsed = JSON.parse(summary);
 
-        setSummary([parsed.title, parsed.body]);
+        setSummary([summary.title, summary.body]);
+
         await addDoc(collection(db, "resources"), {
           url,
           type: "link",
