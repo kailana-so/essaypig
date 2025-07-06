@@ -2,8 +2,6 @@ import { Router } from 'express';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import pdfParse from 'pdf-parse';
-import * as fs from 'fs/promises';
-import EPub from 'epub';
 
 dotenv.config();
 const router = Router();

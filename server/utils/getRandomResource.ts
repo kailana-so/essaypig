@@ -5,6 +5,11 @@ import { db } from '../services/firebase';
 export async function getRandomResource(groupType: string) {
     const snapshot = await db.collection(RESOURCES_COLLECTION).where(groupType, '==', false).get();
   
+    if (snapshot.empty) {
+      console.log(`[getRandomResource] No resources found for group: ${groupType}`);
+      return null;
+    }
+  
     let selected = null;
     let count = 0;
   
@@ -14,14 +19,20 @@ export async function getRandomResource(groupType: string) {
         selected = doc;
       }
     }
-  const data = selected?.data() || {};
-  const { url, type, summary, fileName } = data;
+  
+    if (!selected) {
+      console.log(`[getRandomResource] No resource selected for group: ${groupType}`);
+      return null;
+    }
+  
+    const data = selected.data();
+    const { url, type, summary, fileName } = data;
 
-  return {
-    id: selected?.id,
-    url,
-    fileName,
-    type,
-    summary
-  };
+    return {
+      id: selected.id,
+      url,
+      fileName,
+      type,
+      summary
+    };
   }

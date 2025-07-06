@@ -2,12 +2,12 @@
     "private": true,
     "workspaces": ["client", "server"],
     "scripts": {
-        "dev": "yarn workspace server dev",
-        "build": "yarn workspace client build && yarn workspace server build",
-        "build:client": "yarn workspace client build",
-        "build:server": "yarn workspace server build",
-        "start": "yarn workspace server start",
-        "lint": "yarn workspace server lint",
-        "test": "yarn workspace server test"
+      "build": "yarn workspace client build && yarn workspace server build",
+      "build:client": "yarn workspace client build",
+      "build:server": "yarn workspace server build",
+      "dev:client": "yarn workspace client dev",
+      "dev:server": "yarn workspace server dev",
+      "start:server": "yarn workspace server start"
     }
 }
+  

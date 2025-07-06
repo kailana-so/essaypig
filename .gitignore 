@@ -1,0 +1,16 @@
+# Yarn v2+/v4 artifacts (should not exist in Yarn v1 projects)
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+.yarnrc.yml
+
+# Node & build artifacts
+node_modules/
+dist/
+.env
+.env.*
+.vscode

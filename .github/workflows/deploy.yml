@@ -46,19 +46,12 @@ jobs:
           
           nvm install 18
           nvm use 18
-          
-          export NODE_OPTIONS="--max-old-space-size=2048"
-          
-          sudo swapon --show | grep -q '/swapfile' || (
-            echo "Creating 2G swap..."
-            sudo fallocate -l 2G /swapfile
-            sudo chmod 600 /swapfile
-            sudo mkswap /swapfile
-            sudo swapon /swapfile
-          )
-          
+
+          # Clean Yarn v4/Corepack junk if any
+          sudo rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg || true
+          npm uninstall -g yarn || true
           npm install -g yarn@1.22.22
-          
+        
           cd /var/www/essaypig
           
           echo "Creating frontend .env"

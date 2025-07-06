@@ -42,7 +42,9 @@ export function scheduleMonthlyBBTC() {
         return;
       }
 
-      const { id,url, type, summary, fileName } = resource;
+      console.log('[BBTC] resource', resource);
+
+      const { id, url, type, summary, fileName } = resource;
 
       const resolvedUrl = await resolveUrlForType(type, url, fileName);
 
@@ -54,7 +56,8 @@ export function scheduleMonthlyBBTC() {
         if (email && group) {
           try {
             console.log(`[BBTC] Sending to ${email} (group: ${group})`);
-            await scheduledEmail(email, group, type, resolvedUrl, summary);
+            console.log(email, group, type, resolvedUrl, summary);
+            // await scheduledEmail(email, group, type, resolvedUrl, summary);
           } catch (err) {
             console.error(`⛔ [BBTC] Failed to send to ${email}:`, err);
           }
@@ -65,16 +68,16 @@ export function scheduleMonthlyBBTC() {
 
       const failed = result.filter(r => r.status === 'rejected');
       if (failed.length > 0) {
-        console.error('[BITEXT] Some emails failed to send:', failed);
+        console.error('[BBTC] Some emails failed to send:', failed);
       } else {
-        console.log('[BITEXT] All emails sent successfully');
+        console.log('[BBTC] All emails sent successfully');
         await db.collection(RESOURCES_COLLECTION).doc(id!).update({
           bbtc: true,
         });
-        console.log(`[BITEXT] Marked resource ${id} as bbtc: true`);
+        console.log(`[BBTC] Marked resource ${id} as bbtc: true`);
       }
     } catch (err) {
-      console.error('[BITEXT] Error running email job:', err);
+      console.error('[BBTC] Error running email job:', err);
     }
   });
 }
@@ -90,6 +93,9 @@ export function scheduleMonthlyBITEXT() {
         console.warn('[BITEXT] No available resource found.');
         return;
       }
+
+      console.log('[BITEXT] resource', resource);
+
       const { id,url, type, summary, fileName } = resource;
 
       const resolvedUrl = await resolveUrlForType(type, url, fileName);
@@ -102,7 +108,8 @@ export function scheduleMonthlyBITEXT() {
         if (email && group) {
           try {
             console.log(`[BITEXT] Sending to ${email} (group: ${group})`);
-            await scheduledEmail(email, group, type, resolvedUrl, summary);
+            console.log(email, group, type, resolvedUrl, summary);
+            // await scheduledEmail(email, group, type, resolvedUrl, summary);
           } catch (err) {
             console.error(`⛔[BITEXT] Failed to send to ${email}:`, err);
           }
