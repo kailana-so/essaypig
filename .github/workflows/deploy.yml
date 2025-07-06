@@ -34,50 +34,50 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<'SSH_EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<SSH_EOF
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
             cd /var/www/essaypig
 
             echo "Creating frontend .env"
-            echo "VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY" > .env
-            echo "VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN" >> .env
-            echo "VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID" >> .env
-            echo "VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET" >> .env
-            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID" >> .env
-            echo "VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID" >> .env
+            echo "VITE_FIREBASE_API_KEY=\$VITE_FIREBASE_API_KEY" > .env
+            echo "VITE_FIREBASE_AUTH_DOMAIN=\$VITE_FIREBASE_AUTH_DOMAIN" >> .env
+            echo "VITE_FIREBASE_PROJECT_ID=\$VITE_FIREBASE_PROJECT_ID" >> .env
+            echo "VITE_FIREBASE_STORAGE_BUCKET=\$VITE_FIREBASE_STORAGE_BUCKET" >> .env
+            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=\$VITE_FIREBASE_MESSAGING_SENDER_ID" >> .env
+            echo "VITE_FIREBASE_APP_ID=\$VITE_FIREBASE_APP_ID" >> .env
 
             echo "Creating backend .env"
-            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" > server/.env
-            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> server/.env
-            echo "AWS_BUCKET_NAME=$AWS_BUCKET_NAME" >> server/.env
-            echo "AWS_REGION=$AWS_REGION" >> server/.env
-            echo "DS_API_URL=$DS_API_URL" >> server/.env
-            echo "DS_API_KEY=$DS_API_KEY" >> server/.env
-            echo "DS_MODEL=$DS_MODEL" >> server/.env
+            echo "AWS_ACCESS_KEY_ID=\$AWS_ACCESS_KEY_ID" > server/.env
+            echo "AWS_SECRET_ACCESS_KEY=\$AWS_SECRET_ACCESS_KEY" >> server/.env
+            echo "AWS_BUCKET_NAME=\$AWS_BUCKET_NAME" >> server/.env
+            echo "AWS_REGION=\$AWS_REGION" >> server/.env
+            echo "DS_API_URL=\$DS_API_URL" >> server/.env
+            echo "DS_API_KEY=\$DS_API_KEY" >> server/.env
+            echo "DS_MODEL=\$DS_MODEL" >> server/.env
 
             echo "Building frontend..."
             git pull origin main
             yarn install --frozen-lockfile
-            VITE_FIREBASE_API_KEY="$VITE_FIREBASE_API_KEY" \
-            VITE_FIREBASE_AUTH_DOMAIN="$VITE_FIREBASE_AUTH_DOMAIN" \
-            VITE_FIREBASE_PROJECT_ID="$VITE_FIREBASE_PROJECT_ID" \
-            VITE_FIREBASE_STORAGE_BUCKET="$VITE_FIREBASE_STORAGE_BUCKET" \
-            VITE_FIREBASE_MESSAGING_SENDER_ID="$VITE_FIREBASE_MESSAGING_SENDER_ID" \
-            VITE_FIREBASE_APP_ID="$VITE_FIREBASE_APP_ID" \
+            VITE_FIREBASE_API_KEY="\$VITE_FIREBASE_API_KEY" \
+            VITE_FIREBASE_AUTH_DOMAIN="\$VITE_FIREBASE_AUTH_DOMAIN" \
+            VITE_FIREBASE_PROJECT_ID="\$VITE_FIREBASE_PROJECT_ID" \
+            VITE_FIREBASE_STORAGE_BUCKET="\$VITE_FIREBASE_STORAGE_BUCKET" \
+            VITE_FIREBASE_MESSAGING_SENDER_ID="\$VITE_FIREBASE_MESSAGING_SENDER_ID" \
+            VITE_FIREBASE_APP_ID="\$VITE_FIREBASE_APP_ID" \
             yarn build
 
             echo "Building server..."
             cd server
             yarn install --frozen-lockfile
-            AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
-            AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
-            AWS_BUCKET_NAME="$AWS_BUCKET_NAME" \
-            AWS_REGION="$AWS_REGION" \
-            DS_API_URL="$DS_API_URL" \
-            DS_API_KEY="$DS_API_KEY" \
-            DS_MODEL="$DS_MODEL" \
+            AWS_ACCESS_KEY_ID="\$AWS_ACCESS_KEY_ID" \
+            AWS_SECRET_ACCESS_KEY="\$AWS_SECRET_ACCESS_KEY" \
+            AWS_BUCKET_NAME="\$AWS_BUCKET_NAME" \
+            AWS_REGION="\$AWS_REGION" \
+            DS_API_URL="\$DS_API_URL" \
+            DS_API_KEY="\$DS_API_KEY" \
+            DS_MODEL="\$DS_MODEL" \
             yarn build
             pm2 restart essaypig-server || pm2 start dist/index.js --name essaypig-server
             cd ..
