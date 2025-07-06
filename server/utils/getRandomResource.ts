@@ -28,6 +28,14 @@ export async function getRandomResource(groupType: string) {
     const data = selected.data();
     const { url, type, summary, fileName } = data;
 
+    console.log(`[getRandomResource] Selected resource for ${groupType}:`, {
+      id: selected.id,
+      url,
+      fileName,
+      type,
+      summary: summary ? 'present' : 'missing'
+    });
+
     return {
       id: selected.id,
       url,
