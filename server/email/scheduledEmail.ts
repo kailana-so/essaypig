@@ -1,5 +1,8 @@
 import { Resend } from 'resend';
 import { MONTHLY, TYPE_EPUB, TYPE_PDF } from '../utils/constants';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

@@ -17,7 +17,7 @@ app.use('/api/summarypig', summarisepigRouter);
 app.use('/api/welcomeEmail', welcomeEmailRouter);
 
 // // Start bbtc cron
-// scheduleMonthlyBBTC();
+scheduleMonthlyBBTC();
 
 // start bitext cron
 scheduleMonthlyBITEXT();

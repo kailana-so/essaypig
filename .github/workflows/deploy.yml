@@ -22,6 +22,9 @@ jobs:
       DS_API_URL: ${{ secrets.DS_API_URL }}
       DS_API_KEY: ${{ secrets.DS_API_KEY }}
       DS_MODEL: ${{ secrets.DS_MODEL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+      NODE_ENV: ${{ secrets.NODE_ENV }}
 
     steps:
       - name: Checkout code
@@ -56,6 +59,9 @@ jobs:
             echo "DS_API_URL=${{ secrets.DS_API_URL }}" >> server/.env
             echo "DS_API_KEY=${{ secrets.DS_API_KEY }}" >> server/.env
             echo "DS_MODEL=${{ secrets.DS_MODEL }}" >> server/.env
+            echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> server/.env
+            echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> server/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_KEY=${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" >> server/.env
 
             echo "Building frontend..."
             git pull origin main
