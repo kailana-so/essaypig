@@ -43,11 +43,16 @@ export default function Gobbler() {
   };
 
   const submitResource = async () => {
-    if (mode === 'link' && !url?.trim()) {
+    setSummary([]);
+    
+    if (mode === 'link' && !url?.trim() || mode === 'file' && !file) {
       setError("Not much to that one.");
       return;
     }
-    if (mode === 'file' && !file) return;
+    // if (mode === 'file' && !file) {
+    //   setError("Not much to that one.");
+    //   return;
+    // }
     
     setSubmitting(true);
     setMessage("");
@@ -182,13 +187,14 @@ export default function Gobbler() {
         <button onClick={submitResource} disabled={submitting}>
           {submitting ? "Submitting..." : "Submit"}
         </button>
-        {summary && 
+        {summary && summary.length > 0 ? (
           <div>
             <h3>{summary[0]}</h3>
             <p>{summary[1]}</p>
-          </div>}
-        {message && <p>{message}</p>}
-        {error && <p className="error">{error}</p>}
+          </div>
+        ) : null}
+        {message && message.length > 0 ? <p>{message}</p> : null}
+        {error && error.length > 0 ? <p className="error">{error}</p> : null}
         
       </div>
     </div>
