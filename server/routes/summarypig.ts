@@ -1,15 +1,15 @@
 import { Router } from 'express';
-import * as dotenv from 'dotenv';
-import * as multer from 'multer';
-import * as pdfParse from 'pdf-parse';
+import dotenv from 'dotenv';
+import multer from 'multer';
+import pdfParse from 'pdf-parse';
 import * as fs from 'fs/promises';
-import * as EPub from 'epub';
+import EPub from 'epub';
 
 dotenv.config();
 const router = Router();
 const upload = multer();
 
-router.post('/', upload.single('file'), async (req, res) => {
+router.post('/', upload.single('file') as any, async (req, res) => {
   try {
     const { text, fileType, fileName } = req.body;
     const file = req.file;
@@ -66,7 +66,7 @@ router.post('/', upload.single('file'), async (req, res) => {
       return res.status(500).json({ error: 'Failed to summarise text' });
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     const rawContent = data.choices?.[0]?.message?.content?.trim();
 
     const cleanContent = rawContent?.replace(/```json|```/g, '').trim();
@@ -79,10 +79,10 @@ router.post('/', upload.single('file'), async (req, res) => {
       return res.status(500).json({ error: 'Failed to parse model response' });
     }
 
-    res.json({ summary });
+    return res.json({ summary });
   } catch (err) {
     console.error('Summary route error:', err);
-    res.status(500).json({ error: 'Something went wrong' });
+    return res.status(500).json({ error: 'Something went wrong' });
   }
 });
 
