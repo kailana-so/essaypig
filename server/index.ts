@@ -5,6 +5,11 @@ import presignRouter from './routes/presign';
 import summarisepigRouter from './routes/summarypig';
 import welcomeEmailRouter from './routes/welcomeEmail';
 import { scheduleMonthlyBBTC, scheduleMonthlyBITEXT } from './jobs/scheduler';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, './.env') });
+
 
 const app = express();
 const port = process.env.PORT || 3001;

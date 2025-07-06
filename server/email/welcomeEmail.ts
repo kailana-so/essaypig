@@ -1,9 +1,6 @@
 import { Resend } from 'resend';
 import { MONTHLY } from '../utils/constants';
-import dotenv from 'dotenv';
-import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
