@@ -39,18 +39,17 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<'EOF'
             set -e
-            
+
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
             nvm install 18
             nvm use 18
 
-            # Enable Corepack + Yarn v4
             corepack enable
             corepack prepare yarn@4.9.2 --activate
 
-            # Add 2GB swap to prevent OOM
+            # Prevent OOM: add swap
             sudo swapon --show | grep -q '/swapfile' || (
               echo "Creating 2G swap..."
               sudo fallocate -l 2G /swapfile
@@ -61,50 +60,59 @@ jobs:
 
             export NODE_OPTIONS="--max-old-space-size=2048"
 
+            # Clone fresh if folder missing
+            if [ ! -d /var/www/essaypig ]; then
+              echo "Cloning fresh..."
+              git clone https://github.com/kailana-so/essaypig.git /var/www/essaypig
+            fi
+
             cd /var/www/essaypig
 
             echo "Creating frontend .env"
-            echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" > .env
-            echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" >> .env
-            echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}" >> .env
-            echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" >> .env
-            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" >> .env
-            echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}" >> .env
+            cat <<EOT > .env
+            VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}
+            VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+            VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+            VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+            VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+            VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}
+            EOT
 
             echo "Creating backend .env"
-            echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" > server/.env
-            echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> server/.env
-            echo "AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}" >> server/.env
-            echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> server/.env
-            echo "DS_API_URL=${{ secrets.DS_API_URL }}" >> server/.env
-            echo "DS_API_KEY=${{ secrets.DS_API_KEY }}" >> server/.env
-            echo "DS_MODEL=${{ secrets.DS_MODEL }}" >> server/.env
-            echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> server/.env
-            echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> server/.env
-            echo "FIREBASE_SERVICE_ACCOUNT_KEY=${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" >> server/.env
+            cat <<EOT > server/.env
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
+            AWS_REGION=${{ secrets.AWS_REGION }}
+            DS_API_URL=${{ secrets.DS_API_URL }}
+            DS_API_KEY=${{ secrets.DS_API_KEY }}
+            DS_MODEL=${{ secrets.DS_MODEL }}
+            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+            NODE_ENV=${{ secrets.NODE_ENV }}
+            FIREBASE_SERVICE_ACCOUNT_KEY=${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+            EOT
 
             echo "Pulling latest code..."
-            git stash || true
-            git pull origin main
-            git stash pop || true
+            git fetch origin
+            git reset --hard origin/main
 
-            echo "Installing PM2 globally..."
+            echo "Installing PM2..."
             npm install -g pm2
 
-            echo "Installing monorepo deps..."
+            echo "Installing dependencies..."
             yarn install --immutable
 
             echo "Building frontend..."
             yarn workspace client build
 
-            echo "Building server..."
+            echo "Building backend..."
             yarn workspace server build
 
             echo "Starting server with PM2..."
             pm2 restart essaypig-server || pm2 start server/dist/index.js --name essaypig-server
 
-            echo "Cleaning up frontend .env"
+            echo "Cleanup..."
             rm -f .env
 
-            echo "Deployment successful."
+            echo "✅ Deploy complete"
           EOF
