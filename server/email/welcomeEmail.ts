@@ -1,7 +1,9 @@
 import { Resend } from 'resend';
 import { MONTHLY } from '../utils/constants';
+import path from 'path';
+import dotenv from 'dotenv';
 
-
+dotenv.config({ path: path.resolve(__dirname, '../server/.env') });
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const welcomeEmail = async (to: string, group: string) => {
