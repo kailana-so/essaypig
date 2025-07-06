@@ -1,26 +1,52 @@
-import { type User } from "firebase/auth";
 import { db } from "../services/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useState } from "react";
+import { MAX_SIZE_MB } from "./constants";
+import { ALLOWED_TYPES } from "./constants";
 
-export default function Gobbler({ user }: { user: User }) {
-  const [url, setUrl] = useState("");
+export default function Gobbler() {
+  const [url, setUrl] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [mode, setMode] = useState<'link' | 'file'>('link');
+  const [summary, setSummary] = useState<Array<string>>([]);
 
   const setType = (mode: 'link' | 'file') => {
     setMode(mode);
-    setUrl("");
+    setUrl(""); 
     setFile(null);
     setMessage("");
     setError("");
+    setSummary([]);
+  };
+  
+  const validateAndSetFile = (
+    file: File | null
+  ) => {
+    if (!file) {
+      setError("That's not a file.");
+      return;
+    }
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setError("Only PDF or EPUB files.");
+      return;
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      setError(`Thats a big one. ${MAX_SIZE_MB}MB is the limit.`);
+      return;
+    }
+  
+    setError("");
+    setFile(file);
   };
 
   const submitResource = async () => {
-    if (mode === 'link' && !url.trim()) return;
+    if (mode === 'link' && !url?.trim()) {
+      setError("Not much to that one.");
+      return;
+    }
     if (mode === 'file' && !file) return;
     
     setSubmitting(true);
@@ -28,22 +54,71 @@ export default function Gobbler({ user }: { user: User }) {
     setError("");
 
     try {
-      if (mode === 'link') {
+      if (mode === 'link' && url) {
+        setSummary([]);
+        const formData = new FormData();
+        formData.append('text', url);
+        formData.append('fileType', 'link');
+
+        const summaryRes = await fetch('/api/summarypig', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const { summary } = await summaryRes.json();
+        const parsed = JSON.parse(summary);
+
+        setSummary([parsed.title, parsed.body]);
         await addDoc(collection(db, "resources"), {
           url,
           type: "link",
+          summary: summary,
           created_at: serverTimestamp(),
-          user_id: user.uid,
         });
         setUrl("");
-      } else {
-        await addDoc(collection(db, "resources"), {
-          fileName: file?.name,
-          fileSize: file?.size,
-          type: "pdf",
-          created_at: serverTimestamp(),
-          user_id: user.uid,
+      } else if (mode === 'file' && file) {
+        // 1. Request a presigned URL
+        const res = await fetch(`/api/presign?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`);
+        const { url: presignedUrl } = await res.json();
+
+        if (!presignedUrl) {
+          throw new Error("No presigned URL returned.");
+        }
+
+        // 2. Upload the file to S3 using the presigned URL
+        await fetch(presignedUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type,
+          },
+          body: file,
         });
+        
+        // Strip query params to get the file URL
+        const s3FileUrl = presignedUrl.split('?')[0];
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('fileType', file.type);
+        formData.append('fileName', file.name);
+
+        const summaryRes = await fetch('/api/summarypig', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const { summary } = await summaryRes.json();
+
+        setSummary([summary.title, summary.body]);
+
+        await addDoc(collection(db, "resources"), {
+          fileName: file.name,
+          fileSize: file.size,
+          fileUrl: s3FileUrl,
+          type: file.type.includes('epub') ? 'epub' : 'pdf',
+          created_at: serverTimestamp(),
+        });
+
         setFile(null);
       }
       setMessage("Yum. *snuffling noises*");
@@ -80,7 +155,7 @@ export default function Gobbler({ user }: { user: User }) {
             className={`badge ${mode === 'file' ? 'active' : ''}`}
             onClick={() => setType('file')}
           >
-            PDF
+            File
           </button>
         </div>
 
@@ -95,9 +170,10 @@ export default function Gobbler({ user }: { user: User }) {
             />
           ) : (
             <input
+              key={mode} // Force re-render when mode changes
               type="file"
-              accept=".pdf"
-              onChange={e => setFile(e.target.files?.[0] || null)}
+              accept=".pdf,.epub"
+              onChange={e => validateAndSetFile(e.target.files?.[0] || null)}
               style={{ width: '100%', border: '1px solid #ddd', borderRadius: '4px', padding: '0.5rem'}}
             />
           )}
@@ -106,6 +182,11 @@ export default function Gobbler({ user }: { user: User }) {
         <button onClick={submitResource} disabled={submitting}>
           {submitting ? "Submitting..." : "Submit"}
         </button>
+        {summary && 
+          <div>
+            <h3>{summary[0]}</h3>
+            <p>{summary[1]}</p>
+          </div>}
         {message && <p>{message}</p>}
         {error && <p className="error">{error}</p>}
         

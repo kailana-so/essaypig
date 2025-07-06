@@ -1,4 +1,4 @@
-name: Deploy EssayPig
+name: Deploy Essaypig
 
 on:
   push:
@@ -15,6 +15,10 @@ jobs:
       VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
       VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
       VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
 
     steps:
       - name: Checkout code
@@ -27,25 +31,39 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<EOF
-            export NVM_DIR="\$HOME/.nvm"
-            [ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<'SSH_EOF'
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
             cd /var/www/essaypig
 
-            echo "Creating .env"
-            echo "VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}" > .env
-            echo "VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}" >> .env
-            echo "VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}" >> .env
-            echo "VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET}" >> .env
-            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}" >> .env
-            echo "VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}" >> .env
+            echo "Creating frontend .env"
+            echo "VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY" > .env
+            echo "VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN" >> .env
+            echo "VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID" >> .env
+            echo "VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET" >> .env
+            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID" >> .env
+            echo "VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID" >> .env
 
-            echo "Building..."
+            echo "Creating backend .env"
+            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" > server/.env
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> server/.env
+            echo "AWS_BUCKET_NAME=$AWS_BUCKET_NAME" >> server/.env
+            echo "AWS_REGION=$AWS_REGION" >> server/.env
+
+            echo "Building frontend..."
             git pull origin main
             yarn install --frozen-lockfile
             yarn build
 
-            echo "Cleaning up .env"
+            echo "Building server..."
+            cd server
+            yarn install --frozen-lockfile
+            yarn build
+            pm2 restart essaypig-server || pm2 start dist/index.js --name essaypig-server
+            cd ..
+
+            echo "Cleaning up .env files"
             rm .env
-          EOF
+            rm server/.env
+          SSH_EOF

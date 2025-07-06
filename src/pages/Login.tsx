@@ -2,12 +2,14 @@ import { useState } from "react";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../services/firebase";
+import { getFriendlyAuthMessage } from "../auth/utils";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [error, setError] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+  const [groupName, setGroupName] = useState("");
 
   const handleAuth = async () => {
     try {
@@ -20,21 +22,35 @@ export default function Login() {
           setError("Sorry, you're not on the list...yet.");
           return;
         }
+        const group = snap.data()?.group;
+
+        if (group !== groupName) {
+          setError("You sure about that group?");
+          return;
+        }
 
         await createUserWithEmailAndPassword(auth, email, pass);
       } else {
         await signInWithEmailAndPassword(auth, email, pass);
       }
     } catch (err: any) {
-      console.log(err);
-      setError(err.message || "Damn, that's not right.");
+      const message = getFriendlyAuthMessage(err.code);
+      setError(message);
     }
   };
 
   return (
     <div className="login-container">
-      <h4>{isSignUp ? 'Join us' : 'You know the rules...'}</h4>
+      <h4>{isSignUp ? 'Join the clurb' : 'You know the rules...'}</h4>
+
       <div className="login-form">
+
+        {isSignUp && <input 
+          className="login-input"
+          placeholder="Group Name" 
+          value={groupName} 
+          onChange={e => setGroupName(e.target.value)}
+        />}
         <input 
           className="login-input"
           placeholder="Email" 
