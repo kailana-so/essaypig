@@ -37,9 +37,11 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<EOF
-            export NVM_DIR="\$HOME/.nvm"
-            [ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<'EOF'
+            set -e  # Exit on any error
+            
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
             nvm install 18
             nvm use 18
@@ -69,18 +71,30 @@ jobs:
             echo "NODE_ENV=${{ secrets.NODE_ENV }}" >> server/.env
             echo "FIREBASE_SERVICE_ACCOUNT_KEY=${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" >> server/.env
 
-            echo "Building frontend..."
+            echo "Pulling latest code..."
+            git stash || true
             git pull origin main
-            yarn install --frozen-lockfile
+            git stash pop || true
+
+            echo "Installing PM2 globally..."
+            npm install -g pm2
+
+            echo "Building frontend..."
+            yarn install
             yarn build
 
             echo "Building server..."
             cd server
-            yarn install --frozen-lockfile
+            yarn install
             yarn build
+            
+            echo "Starting server with PM2..."
             pm2 restart essaypig-server || pm2 start dist/index.js --name essaypig-server
+            
             cd ..
 
             echo "Cleaning up frontend .env file (keeping server .env for runtime)"
             rm -f .env
+            
+            echo "Deployment completed successfully!"
           EOF
