@@ -57,8 +57,7 @@ jobs:
             sudo swapon /swapfile
           )
           
-          corepack enable
-          corepack prepare yarn@4.9.2 --activate
+          npm install -g yarn@1.22.22
           
           cd /var/www/essaypig
           
@@ -93,7 +92,7 @@ jobs:
           npm install -g pm2
           
           echo "Installing dependencies..."
-          yarn install --immutable
+          yarn install --frozen-lockfile
           
           echo "Building client..."
           yarn workspace client build
