@@ -1,6 +1,7 @@
 {
     "private": true,
     "workspaces": ["client", "server"],
+    "packageManager": "yarn@4.9.2",
     "scripts": {
         "dev": "yarn workspace server dev",
         "build": "yarn workspace client build && yarn workspace server build",
