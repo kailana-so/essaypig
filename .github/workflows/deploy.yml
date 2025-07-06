@@ -37,16 +37,19 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<'EOF'
-            set -e
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<'EOC'
+            set -eo pipefail
 
             export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
             nvm install 18
             nvm use 18
 
-            # Add 2GB swap if missing
+            # Memory settings
+            export NODE_OPTIONS="--max-old-space-size=2048"
+
+            # Swap setup
             sudo swapon --show | grep -q '/swapfile' || (
               echo "Creating 2G swap..."
               sudo fallocate -l 2G /swapfile
@@ -55,49 +58,48 @@ jobs:
               sudo swapon /swapfile
             )
 
-            export NODE_OPTIONS="--max-old-space-size=2048"
-
+            # Corepack + yarn
             corepack enable
             corepack prepare yarn@4.9.2 --activate
 
             cd /var/www/essaypig
 
             echo "Creating frontend .env"
-            cat <<'EOT' > .env
-            VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}
-            VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-            VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-            VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-            VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-            VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}
-            EOT
+            cat > .env <<EOF
+            VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
+            VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
+            VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
+            VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET}
+            VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}
+            VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
+            EOF
 
             echo "Creating backend .env"
-            cat <<'EOT' > server/.env
-            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
-            AWS_REGION=${{ secrets.AWS_REGION }}
-            DS_API_URL=${{ secrets.DS_API_URL }}
-            DS_API_KEY=${{ secrets.DS_API_KEY }}
-            DS_MODEL=${{ secrets.DS_MODEL }}
-            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
-            NODE_ENV=${{ secrets.NODE_ENV }}
-            FIREBASE_SERVICE_ACCOUNT_KEY=${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-            EOT
+            cat > server/.env <<EOF
+            AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+            AWS_REGION=${AWS_REGION}
+            DS_API_URL=${DS_API_URL}
+            DS_API_KEY=${DS_API_KEY}
+            DS_MODEL=${DS_MODEL}
+            RESEND_API_KEY=${RESEND_API_KEY}
+            NODE_ENV=${NODE_ENV}
+            FIREBASE_SERVICE_ACCOUNT_KEY=${FIREBASE_SERVICE_ACCOUNT_KEY}
+            EOF
 
             echo "Pulling latest code..."
             git stash || true
             git pull origin main
             git stash pop || true
 
-            echo "Installing PM2 globally..."
+            echo "Installing PM2..."
             npm install -g pm2
 
-            echo "Installing monorepo deps..."
+            echo "Installing dependencies..."
             yarn install --immutable
 
-            echo "Building frontend..."
+            echo "Building client..."
             yarn workspace client build
 
             echo "Building server..."
@@ -109,5 +111,5 @@ jobs:
             echo "Cleaning up frontend .env"
             rm -f .env
 
-            echo "Deployment successful."
-          EOF
+            echo "✅ Deployment complete"
+          EOC
