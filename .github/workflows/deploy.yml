@@ -54,7 +54,12 @@ jobs:
           npm install -g yarn@1.22.22
         
           cd /var/www/essaypig
-          
+ 
+          echo "Pulling latest code..."
+          git stash || true
+          git pull origin main
+          git stash pop || true
+
           echo "Creating frontend .env"
           echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" > .env
           echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" >> .env
