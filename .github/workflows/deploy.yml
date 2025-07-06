@@ -44,8 +44,9 @@ jobs:
           export NVM_DIR="\$HOME/.nvm"
           [ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
           
-          nvm install 18
-          nvm use 18
+          echo "Using Node.js 22 (for vite@7)"
+          nvm install 22
+          nvm use 22
 
           # Clean Yarn v4/Corepack junk if any
           sudo rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg || true
