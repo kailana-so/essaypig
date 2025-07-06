@@ -2,10 +2,11 @@ import { Router } from 'express';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
+import path from 'path';
 
 const router = Router();
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../server/.env') });
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION,

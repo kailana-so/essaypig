@@ -7,8 +7,9 @@ import { getRandomResource } from '../utils/getRandomResource';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../server/.env') }); 
 
 const s3 = new S3Client({ region: process.env.AWS_REGION });
 
@@ -109,7 +110,7 @@ export function scheduleMonthlyBITEXT() {
           try {
             console.log(`[BITEXT] Sending to ${email} (group: ${group})`);
             console.log(email, group, type, resolvedUrl, summary);
-            // await scheduledEmail(email, group, type, resolvedUrl, summary);
+            await scheduledEmail(email, group, type, resolvedUrl, summary);
           } catch (err) {
             console.error(`⛔[BITEXT] Failed to send to ${email}:`, err);
           }
