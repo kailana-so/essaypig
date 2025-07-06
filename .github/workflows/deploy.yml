@@ -46,10 +46,7 @@ jobs:
             nvm install 18
             nvm use 18
 
-            corepack enable
-            corepack prepare yarn@4.9.2 --activate
-
-            # Prevent OOM: add swap
+            # Add 2GB swap if missing
             sudo swapon --show | grep -q '/swapfile' || (
               echo "Creating 2G swap..."
               sudo fallocate -l 2G /swapfile
@@ -60,16 +57,13 @@ jobs:
 
             export NODE_OPTIONS="--max-old-space-size=2048"
 
-            # Clone fresh if folder missing
-            if [ ! -d /var/www/essaypig ]; then
-              echo "Cloning fresh..."
-              git clone https://github.com/kailana-so/essaypig.git /var/www/essaypig
-            fi
+            corepack enable
+            corepack prepare yarn@4.9.2 --activate
 
             cd /var/www/essaypig
 
             echo "Creating frontend .env"
-            cat <<EOT > .env
+            cat <<'EOT' > .env
             VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}
             VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
             VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}
@@ -79,7 +73,7 @@ jobs:
             EOT
 
             echo "Creating backend .env"
-            cat <<EOT > server/.env
+            cat <<'EOT' > server/.env
             AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
@@ -93,26 +87,27 @@ jobs:
             EOT
 
             echo "Pulling latest code..."
-            git fetch origin
-            git reset --hard origin/main
+            git stash || true
+            git pull origin main
+            git stash pop || true
 
-            echo "Installing PM2..."
+            echo "Installing PM2 globally..."
             npm install -g pm2
 
-            echo "Installing dependencies..."
+            echo "Installing monorepo deps..."
             yarn install --immutable
 
             echo "Building frontend..."
             yarn workspace client build
 
-            echo "Building backend..."
+            echo "Building server..."
             yarn workspace server build
 
             echo "Starting server with PM2..."
             pm2 restart essaypig-server || pm2 start server/dist/index.js --name essaypig-server
 
-            echo "Cleanup..."
+            echo "Cleaning up frontend .env"
             rm -f .env
 
-            echo "✅ Deploy complete"
+            echo "Deployment successful."
           EOF
