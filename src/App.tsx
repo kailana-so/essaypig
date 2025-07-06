@@ -74,7 +74,7 @@ function App() {
         </pre>
         </div>
       </div>
-        {user ? <Gobbler user={user} /> : <Login />}
+        {user ? <Gobbler /> : <Login />}
     </div>
   )
 }
