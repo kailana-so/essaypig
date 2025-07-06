@@ -5,7 +5,6 @@ const router = express.Router();
 
 router.post('/', async (req, res) => {
   const { email, group } = req.body;
-
   console.log('Sending welcome email for group', group);
   try {
     await welcomeEmail(email, group);

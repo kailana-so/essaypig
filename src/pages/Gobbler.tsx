@@ -74,6 +74,8 @@ export default function Gobbler() {
           url,
           type: "link",
           summary: summary,
+          bbtc: false,
+          bitext: false,
           created_at: serverTimestamp(),
         });
         setUrl("");
@@ -116,7 +118,10 @@ export default function Gobbler() {
           fileName: file.name,
           fileSize: file.size,
           fileUrl: s3FileUrl,
+          summary: summary,
           type: file.type.includes('epub') ? 'epub' : 'pdf',
+          bbtc: false,
+          bitext: false,
           created_at: serverTimestamp(),
         });
 

@@ -30,6 +30,14 @@ export default function Login() {
         }
 
         await createUserWithEmailAndPassword(auth, email, pass);
+        // Send welcome email via server
+        await fetch('/api/welcomeEmail', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, group: groupName }), // or whatever name
+        });
       } else {
         await signInWithEmailAndPassword(auth, email, pass);
       }

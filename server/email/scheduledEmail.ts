@@ -1,19 +1,18 @@
 import { Resend } from 'resend';
-import { MONTHLY } from '../constants';
+import { MONTHLY, TYPE_EPUB, TYPE_PDF } from '../utils/constants';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const scheduledEmail = async (to: string, group: string, essay: string, summary: { title: string, body: string }) => {
+export const scheduledEmail = async (to: string, group: string, type: string, url: string, summary: { title: string, body: string }) => {
 
     const schedule = group === MONTHLY 
     ? '<a href="https://meet.google.com/vzj-jvsr-ybo">Google hangout</a> as per usual.' 
     : 'Pub Friday?';
 
-
-  const res = await resend.emails.send({
+  const response = await resend.emails.send({
     from: 'oink@essaypig.com',
     to,
-    subject: '🐷📚 Your essay is here.',
+    subject: `🐷📚 Your new essay is here, ${group}`,
     html: `
       <div style="padding: 0 0 1rem 0; font-family: monospace, 'Inconsolata', sans-serif; font-size: 14px; color: #333;">
         <div style="text-align: left; margin-bottom: 1rem;">
@@ -22,12 +21,10 @@ export const scheduledEmail = async (to: string, group: string, essay: string, s
         <br />
         <br />
         <div style="text-align: left; margin: 1rem 0;">
-          <p>Hi ${group} piggy, 
+          <p>Morning ${group} piggy, 
           </p>
-          <p>Your essay is: <a href="${essay}" style="color: #3b82f6;">${essay}</a>.</p>
-          <p>
-            The link will be available for 24 hours.
-          </p>
+          <p>Your essay is: <a href="${url}" style="color: #3b82f6;">${summary.title}</a>.</p>
+          ${type === TYPE_PDF || type === TYPE_EPUB ? '<p>The link will be available for 24 hours.</p>' : ''}
           <br />
           <h3>
             ${summary.title}
@@ -54,4 +51,6 @@ export const scheduledEmail = async (to: string, group: string, essay: string, s
       </div>
     `,
   });
+
+  console.log("Email sent to", to)
 };

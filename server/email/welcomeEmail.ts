@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { MONTHLY } from '../constants';
+import { MONTHLY } from '../utils/constants';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

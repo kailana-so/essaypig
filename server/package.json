@@ -16,7 +16,9 @@
     "epub": "^1.3.0",
     "epub-parse": "^1.0.9",
     "express": "^5.1.0",
+    "firebase-admin": "^13.4.0",
     "multer": "^2.0.1",
+    "node-cron": "^4.2.0",
     "pdf-parse": "^1.1.1",
     "resend": "^4.6.0",
     "streamifier": "^0.1.1"
