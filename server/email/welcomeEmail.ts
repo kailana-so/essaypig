@@ -22,7 +22,7 @@ export const welcomeEmail = async (to: string, group: string) => {
     html: `
       <div style="padding: 0 0 1rem 0; font-family: monospace, 'Inconsolata', sans-serif; font-size: 14px; color: #333;">
         <div style="text-align: left; margin-bottom: 1rem;">
-          <img src="https://essaypig.com/essay-pig.png" alt="Essay Pig logo" style="height: 40px;" />
+          <img src="https://essaypig.com/essay-pig.png" alt="Essay Pig logo" style="height: 40px; width: auto; display: block;" />
         </div>
         <br />
         <div style="text-align: left; margin: 1rem 0;">
