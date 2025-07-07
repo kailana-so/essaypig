@@ -21,7 +21,7 @@ export const scheduledEmail = async (to: string, group: string, type: string, ur
 //     html: `
 //       <div style="padding: 0 0 1rem 0; font-family: monospace, 'Inconsolata', sans-serif; font-size: 14px; color: #333;">
 //         <div style="text-align: left; margin-bottom: 1rem;">
-//           <img src="https://essaypig.com/essay-pig.svg" alt="Essay Pig logo" style="height: 40px;" />
+//           <img src="https://essaypig.com/essay-pig.png" alt="Essay Pig logo" style="height: 40px;" />
 //         </div>
 //         <br />
 //         <br />
