@@ -3,7 +3,7 @@
 An automated book club service.  
 Join a group, upload links or PDFs — and **Piggy** will send out a random essay with a synopsis to the group at the chosen interval.
 
-![Essay Pig Banner](./public/essaypiggy-banner.png)
+![Essay Pig Banner](essay-pig-banner.png)
 
 
 - Cron job monthly or weekly email delivery of random pick essay from the pool
