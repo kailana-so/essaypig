@@ -14,7 +14,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const s3 = new S3Client({ region: process.env.AWS_REGION });
 
-async function getPresignedUrl(bucket: string, fileName: string, expiresIn = 3600) {
+async function getPresignedUrl(bucket: string, fileName: string, expiresIn = 86400) {
   const command = new GetObjectCommand({ Bucket: bucket, Key: fileName });
   return getSignedUrl(s3, command, { expiresIn });
 }
