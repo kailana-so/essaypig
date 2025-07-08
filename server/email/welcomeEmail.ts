@@ -15,7 +15,7 @@ export const welcomeEmail = async (to: string, group: string) => {
   : 'Essays will be picked at random and emailed on Mondays each fortnight';
 
 
-  const res = await resend.emails.send({
+  await resend.emails.send({
     from: 'oink@essaypig.com',
     to,
     subject: '🐷📚 Welcome to Essay Pig',
@@ -57,4 +57,5 @@ export const welcomeEmail = async (to: string, group: string) => {
       </div>
     `,
   });
+  console.log("Email sent to", to)
 };
