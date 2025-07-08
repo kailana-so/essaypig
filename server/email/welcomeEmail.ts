@@ -57,5 +57,5 @@ export const welcomeEmail = async (to: string, group: string) => {
       </div>
     `,
   });
-  console.log("Email sent to", to)
+  console.log("Welcome email sent to", to)
 };
