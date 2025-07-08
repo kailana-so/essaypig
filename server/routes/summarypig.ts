@@ -49,7 +49,7 @@ router.post('/', upload.single('file') as any, async (req, res) => {
           {
             role: 'system',
             content:
-              'You love summarising texts into 1–2 sentence descriptions including the title of the text. Return JSON format with "title" and "body" keys. Include nothing else.',
+              'You love summarising texts into 1–2 sentence descriptions including the title of the text and 2 questions. Questions should be concise (max 12 words), clever or funny and raise new viewpoints on the text or author. Return JSON format with "title", "body", "questions": { "question1", "question2" } keys. Include nothing else.',
           },
           {
             role: 'user',

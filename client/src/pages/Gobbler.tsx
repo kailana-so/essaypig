@@ -69,7 +69,6 @@ export default function Gobbler() {
         const { summary } = await summaryRes.json();
 
         setSummary([summary.title, summary.body]);
-
         await addDoc(collection(db, "resources"), {
           url,
           type: "link",
@@ -111,7 +110,6 @@ export default function Gobbler() {
         });
 
         const { summary } = await summaryRes.json();
-
         setSummary([summary.title, summary.body]);
 
         await addDoc(collection(db, "resources"), {
