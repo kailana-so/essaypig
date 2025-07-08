@@ -31,7 +31,6 @@ async function resolveUrlForType(type: string, url: string, fileName: string): P
 }
 
 const scheduleBbtc = process.env.NODE_ENV === 'development' ? '* * * * *' : '0 9 1 * *'; // 1st of every month 9:00 AM
-const scheduleBitext = process.env.NODE_ENV === 'development' ? '* * * * *' : '0 9 * * 1'; // Every Monday at 9:00 AM
 
 export function scheduleMonthlyBBTC() {
   cron.schedule(scheduleBbtc, async () => {
@@ -59,7 +58,7 @@ export function scheduleMonthlyBBTC() {
           try {
             console.log(`[BBTC] Sending to ${email} (group: ${group})`);
             console.log(email, group, type, resolvedUrl, summary);
-            // await scheduledEmail(email, group, type, resolvedUrl, summary);
+            await scheduledEmail(email, group, type, resolvedUrl, summary);
           } catch (err) {
             console.error(`⛔ [BBTC] Failed to send to ${email}:`, err);
           }
@@ -73,9 +72,9 @@ export function scheduleMonthlyBBTC() {
         console.error('[BBTC] Some emails failed to send:', failed);
       } else {
         console.log('[BBTC] All emails sent successfully');
-        // await db.collection(RESOURCES_COLLECTION).doc(id!).update({
-        //   bbtc: true,
-        // });
+        await db.collection(RESOURCES_COLLECTION).doc(id!).update({
+          bbtc: true,
+        });
         console.log(`[BBTC] Marked resource ${id} as bbtc: true`);
       }
     } catch (err) {
@@ -84,10 +83,24 @@ export function scheduleMonthlyBBTC() {
   });
 }
 
+// schedule for 2nd and 4th Monday of the month
+const scheduleBitext = process.env.NODE_ENV === 'development'
+  ? '* * * * *'
+  : '0 9 8-28 * *'; 
 
-export function scheduleMonthlyBITEXT() {
+function isSecondOrFourthMonday(date: Date): boolean {
+  if (date.getDay() !== 1) return false; // 1 = Monday
+  const weekOfMonth = Math.ceil(date.getDate() / 7);
+  return weekOfMonth === 2 || weekOfMonth === 4;
+}
+
+export function scheduleFortnightlyBITEXT() {
   cron.schedule(scheduleBitext, async () => {
-    console.log('[BITEXT] Running monthly bitext email job...');
+
+    const now = new Date();
+    if (!isSecondOrFourthMonday(now)) return;
+
+    console.log('[BITEXT] Running fortnightly bitext email job...');
 
     try {
       const resource = await getRandomResource(FORNIGHTLY);

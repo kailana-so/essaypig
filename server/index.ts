@@ -8,7 +8,7 @@ import cors from 'cors';
 import presignRouter from './routes/presign';
 import summarisepigRouter from './routes/summarypig';
 import welcomeEmailRouter from './routes/welcomeEmail';
-import { scheduleMonthlyBBTC, scheduleMonthlyBITEXT } from './jobs/scheduler';
+import { scheduleFortnightlyBITEXT, scheduleMonthlyBBTC } from './jobs/scheduler';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -20,11 +20,14 @@ app.use('/api/presign', presignRouter);
 app.use('/api/summarypig', summarisepigRouter);
 app.use('/api/welcomeEmail', welcomeEmailRouter);
 
-// // Start bbtc cron
-scheduleMonthlyBBTC();
 
-// start bitext cron
-scheduleMonthlyBITEXT();
+if (process.env.NODE_ENV !== 'development') {
+  // Start bbtc cron
+  scheduleMonthlyBBTC();
+
+  // start bitext cron
+  scheduleFortnightlyBITEXT();
+}
 
 app.listen(port, () => {
   console.log(`\n🐷 🟢 🐷  Server running on http://localhost:${port}`);

@@ -12,7 +12,7 @@ export const scheduledEmail = async (to: string, group: string, type: string, ur
 
   const schedule = group === MONTHLY 
   ? '<a href="https://meet.google.com/vzj-jvsr-ybo">Google hangout</a> as per usual.' 
-  : 'Pub Friday?';
+  : 'Pub next Friday?';
 
   const response = await resend.emails.send({
     from: 'oink@essaypig.com',
