@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const scheduledEmail = async (to: string, group: string, type: string, url: string, summary: { title: string, body: string, question1: string, question2: string }) => {
+export const scheduledEmail = async (to: string, group: string, type: string, url: string, summary: { title: string, body: string, questions: { question1: string, question2: string } }) => {
 
   const schedule = group === MONTHLY 
   ? '<a href="https://meet.google.com/vzj-jvsr-ybo">Google hangout</a> as per usual.' 
@@ -37,8 +37,8 @@ export const scheduledEmail = async (to: string, group: string, type: string, ur
           <p>
             ${summary.body}
           </p>
-          <p><em>${summary.question1}</em></p>
-          <p><em>${summary.question2}</em></p>
+          <p><em>${summary.questions.question1}</em></p>
+          <p><em>${summary.questions.question2}</em></p>
           <br />
           <p>
             ${schedule}
