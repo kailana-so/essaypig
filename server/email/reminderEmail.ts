@@ -14,6 +14,10 @@ export const reminderEmail = async (to: string, group: string) => {
   ? '<a href="https://meet.google.com/vzj-jvsr-ybo">Join here.</a>.' 
   : 'Pub?';
 
+  const subject = group === MONTHLY 
+  ? `🐷📚 It's book club time (7:30pm)`
+  : `🐷📚 It's book club pub time!`;
+
   await resend.emails.send({
     from: 'oink@essaypig.com',
     to,
