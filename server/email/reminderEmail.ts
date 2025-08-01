@@ -8,16 +8,16 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const scheduledEmail = async (to: string, group: string, type: string, url: string, summary: { title: string, body: string, questions: { question1: string, question2: string } }) => {
+export const reminderEmail = async (to: string, group: string) => {
 
   const schedule = group === MONTHLY 
-  ? 'The <a href="https://meet.google.com/vzj-jvsr-ybo">meeting link</a>, as per usual.'  
-  : 'Pub next Friday?';
+  ? '<a href="https://meet.google.com/vzj-jvsr-ybo">Join here.</a>.' 
+  : 'Pub?';
 
   await resend.emails.send({
     from: 'oink@essaypig.com',
     to,
-    subject: `🐷📚 Your new essay is here`,
+    subject: `🐷📚 It's book club time (7:30pm)`,
     html: `
       <div style="padding: 0 0 1rem 0; font-family: monospace, 'Inconsolata', sans-serif; font-size: 14px; color: #333;">
         <div style="text-align: left; margin-bottom: 1rem;">
@@ -26,20 +26,10 @@ export const scheduledEmail = async (to: string, group: string, type: string, ur
         <br />
         <br />
         <div style="text-align: left; margin: 1rem 0;">
-          <p>Evening ${group} piggy, 
-          </p>
-          <p>Your essay is: <a href="${url}" style="color: #3b82f6;">${summary.title}</a>.</p>
-          ${type === TYPE_PDF || type === TYPE_EPUB ? '<p>The link will be available for 24 hours.</p>' : ''}
-          <br />
-          <h3>
-            ${summary.title}
-          </h3>
+          <p>Afternoon ${group} piggy, </p>
           <p>
-            ${summary.body}
+            It's book club time (7:30pm).
           </p>
-          <li><em>${summary.questions.question1}</em></li>
-          <li><em>${summary.questions.question2}</em></li>
-          <br />
           <p>
             ${schedule}
           </p>
