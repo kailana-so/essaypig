@@ -11,7 +11,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const scheduledEmail = async (to: string, group: string, type: string, url: string, summary: { title: string, body: string, questions: { question1: string, question2: string } }) => {
 
   const schedule = group === MONTHLY 
-  ? 'The <a href="https://meet.google.com/vzj-jvsr-ybo">meeting link</a>, as per usual.'  
+  ? 'Third Tuesday of each month - <a href="https://meet.google.com/vzj-jvsr-ybo">meeting link</a>, as per usual.'  
   : 'Pub next Friday?';
 
   await resend.emails.send({
