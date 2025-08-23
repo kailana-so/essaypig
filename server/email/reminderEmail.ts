@@ -21,7 +21,7 @@ export const reminderEmail = async (to: string, group: string) => {
   await resend.emails.send({
     from: 'oink@essaypig.com',
     to,
-    subject: `${subject}`,
+    subject: `🐷📚 ${subject}`,
     html: `
       <div style="padding: 0 0 1rem 0; font-family: monospace, 'Inconsolata', sans-serif; font-size: 14px; color: #333;">
         <div style="text-align: left; margin-bottom: 1rem;">
