@@ -1,9 +1,8 @@
 import { Resend } from 'resend';
-import { MONTHLY, TYPE_EPUB, TYPE_PDF } from '../utils/constants';
+import { MONTHLY } from '../utils/constants';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load .env from server directory (where it's created during deployment)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
