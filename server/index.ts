@@ -1,3 +1,5 @@
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 import express from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -9,7 +11,6 @@ import welcomeEmailRouter from './routes/welcomeEmail';
 import { reminderFortnightlyBITEXT, scheduleFortnightlyBITEXT, scheduleMonthlyBBTC, reminderMonthlyBBTC } from './jobs/scheduler';
 // import { test_reminderFortnightlyBITEXT, test_reminderMonthlyBBTC, test_scheduleFortnightlyBITEXT, test_scheduleMonthlyBBTC} from './jobs/schedulerTesting'
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const port = process.env.PORT || 3001;
