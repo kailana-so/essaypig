@@ -1,4 +1,3 @@
-// cron/monthlyBBTC.ts
 import cron from 'node-cron';
 import { scheduledEmail } from '../email/scheduledEmail';
 import { reminderEmail } from '../email/reminderEmail';
@@ -9,8 +8,8 @@ import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
 import path from 'path';
+import { sendAllWithRateLimit } from '../utils/rateLimiter';
 
-// Load .env from server directory (where it's created during deployment)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const s3 = new S3Client({ region: process.env.AWS_REGION });
@@ -29,48 +28,44 @@ async function resolveUrlForType(type: string, url: string, fileName: string): P
   return url;
 }
 
-const scheduleBbtc = process.env.NODE_ENV === 'development' ? '* * * * *' : '0 9 1 * *'; // 1st of every month 9:00 AM
-const reminderBbtc = process.env.NODE_ENV === 'development'
-  ? '* * * * *'
-  : '0 9 15-21 * 2'; 
+/**
+ * scheduleBbtc sends a scheduled email for 1st of every month
+ */
+const scheduleBbtc = '0 9 1 * *';
+
+/**
+ * reminderBbtc sends a reminded email for 3rd Tuesday of the month
+ */
+const reminderBbtc = '0 9 15-21 * 2'; 
 
 export function scheduleMonthlyBBTC() {
   cron.schedule(scheduleBbtc, async () => {
     try {
       const resource = await getRandomResource(MONTHLY);
-      if (!resource) {
-        console.warn('[BBTC] No available resource found.');
-        return;
-      }
+      if (!resource) return console.warn('[BBTC] No available resource found.');
 
       const { id, url, type, summary, fileName } = resource;
       const resolvedUrl = await resolveUrlForType(type, url, fileName);
-      const snapshot = await db.collection(USERS_COLLECTION).where('group', '==', MONTHLY).get();
 
-      const sendJobs = snapshot.docs.map(async (doc) => {
+      const snapshot = await db.collection(USERS_COLLECTION)
+        .where('group', '==', MONTHLY).get();
+
+      const docs = snapshot.docs;
+
+      const { failed } = await sendAllWithRateLimit(docs, async (doc) => {
         const email = doc.id;
         const { group } = doc.data();
-        if (email && group) {
-          try {
-            await scheduledEmail(email, group, type, resolvedUrl, summary);
-          } catch (err) {
-            console.error(`[BBTC] Failed to send to ${email}:`, err);
-          }
-        }
-      });
+        if (!email || !group) return;
+        await scheduledEmail(email, group, type, resolvedUrl, summary);
+      }, 2);
 
-      const result = await Promise.allSettled(sendJobs);
-
-      const failed = result.filter(r => r.status === 'rejected');
-      if (failed.length > 0) {
-        console.error('[BBTC] Some emails failed to send:', failed);
+      if (failed.length) {
+        console.error('[BBTC] Some emails failed to send:', failed.map(f => f.email.id));
       } else {
-        await db.collection(RESOURCES_COLLECTION).doc(id!).update({
-          bbtc: true,
-        });
+        await db.collection(RESOURCES_COLLECTION).doc(id!).update({ bbtc: true });
       }
     } catch (err) {
-      console.error('[BBTC] Error running reminder email job:', err);
+      console.error('[BBTC] Error running monthly job:', err);
     }
   });
 }
@@ -78,47 +73,45 @@ export function scheduleMonthlyBBTC() {
 export function reminderMonthlyBBTC() {
   cron.schedule(reminderBbtc, async () => {
     try {
-      const snapshot = await db.collection(USERS_COLLECTION).where('group', '==', MONTHLY).get();
+      const snapshot = await db.collection(USERS_COLLECTION)
+        .where('group', '==', MONTHLY).get();
 
-      const sendJobs = snapshot.docs.map(async (doc) => {
+      const docs = snapshot.docs;
+
+      const { failed } = await sendAllWithRateLimit(docs, async (doc) => {
         const email = doc.id;
         const { group } = doc.data();
-        if (email && group) {
-          try {
-            await reminderEmail(email, group);
-          } catch (err) {
-            console.error(`[BBTC] Failed to send reminder to ${email}:`, err);
-          }
-        }
-      });
+        console.log(group, "TBBTC")
 
-      const result = await Promise.allSettled(sendJobs);
-      const failed = result.filter(r => r.status === 'rejected');
-      if (failed.length > 0) {
-        console.error('[BBTC] Some emails failed to send:', failed);
-      } 
+        if (!email) return;
+        await reminderEmail(email, MONTHLY);
+      }, 2);
+
+      if (failed.length) {
+        console.error('[BBTC] Some reminders failed:', failed.map(f => f.email.id));
+      }
     } catch (err) {
-      console.error('[BBTC] Error running reminder email job:', err);
+      console.error('[BBTC] Error running monthly reminder:', err);
     }
   });
 }
 
+/**
+ * scheduleBitext sends a schedules email for 2nd and 4th Monday of the month
+ */
+const scheduleBitext = '0 9 8-28 * *'; 
 
-// schedule for 2nd and 4th Monday of the month
-const scheduleBitext = process.env.NODE_ENV === 'development'
-  ? '* * * * *'
-  : '0 9 8-28 * *'; 
+/**
+ * reminderBitext sends a schedules email for 1st and 3rd Friday of the month
+ */
+const reminderBitext = '0 8 1-30 * 5'; 
+
 
 function isSecondOrFourthMonday(date: Date): boolean {
   if (date.getDay() !== 1) return false; // 1 = Monday
   const weekOfMonth = Math.ceil(date.getDate() / 7);
   return weekOfMonth === 2 || weekOfMonth === 4;
 }
-
-// reminder for 1st and 3rd Friday of the month
-const reminderBitext = process.env.NODE_ENV === 'development'
-  ? '* * * * *'
-  : '0 8 1-30 * 5'; 
 
 function isFirstOrThirdFriday(date: Date): boolean {
   if (date.getDay() !== 5) return false; // 5 = Friday
@@ -142,23 +135,17 @@ export function scheduleFortnightlyBITEXT() {
       const { id,url, type, summary, fileName } = resource;
       const resolvedUrl = await resolveUrlForType(type, url, fileName);
       const snapshot = await db.collection(USERS_COLLECTION).where('group', '==', FORNIGHTLY).get();
+      const docs = snapshot.docs;
 
-      const sendJobs = snapshot.docs.map(async (doc) => {
+      const { failed } = await sendAllWithRateLimit(docs, async (doc) => {
         const email = doc.id;
         const { group } = doc.data();
-        if (email && group) {
-          try {
-            await scheduledEmail(email, group, type, resolvedUrl, summary);
-          } catch (err) {
-            console.error(`[BITEXT] Failed to send to ${email}:`, err);
-          }
-        }
-      });
+        if (!email || !group) return;
+        await scheduledEmail(email, group, type, resolvedUrl, summary);
+      }, 2);
 
-      const result = await Promise.allSettled(sendJobs);
-      const failed = result.filter(r => r.status === 'rejected');
-      if (failed.length > 0) {
-        console.error('[BITEXT] Some emails failed to send:', failed);
+      if (failed.length) {
+        console.error('[BITEXT] Some emails failed to send:', failed.map(f => f.email.id));
       } else {
         await db.collection(RESOURCES_COLLECTION).doc(id!).update({
           bitext: true,
@@ -178,23 +165,20 @@ export function reminderFortnightlyBITEXT() {
     
     try {
       const snapshot = await db.collection(USERS_COLLECTION).where('group', '==', FORNIGHTLY).get();
-      const sendJobs = snapshot.docs.map(async (doc) => {
+      const docs =  snapshot.docs
+
+      const { failed } = await sendAllWithRateLimit(docs, async (doc) => {
         const email = doc.id;
         const { group } = doc.data();
-        if (email && group) {
-          try {
-            await reminderEmail(email, group);
-          } catch (err) {
-            console.error(`[BITEXT] Failed to send reminder to ${email}:`, err);
-          }
-        }
-      });
 
-      const result = await Promise.allSettled(sendJobs);
-      const failed = result.filter(r => r.status === 'rejected');
-      if (failed.length > 0) {
-        console.error('[BITEXT] Some emails failed to send:', failed);
-      } 
+        console.log(group)
+        if (!email || !group) return;
+        await reminderEmail(email, group);
+      }, 2);
+
+      if (failed.length) {
+        console.error('[BITEXT] Some reminders failed:', failed.map(f => f.email.id));
+      }
     } catch (err) {
       console.error('[BITEXT] Error running reminder email job:', err);
     }

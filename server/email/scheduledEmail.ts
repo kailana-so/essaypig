@@ -58,6 +58,4 @@ export const scheduledEmail = async (to: string, group: string, type: string, ur
       </div>
     `,
   });
-
-  console.log("Scheduled email sent to", to)
 };

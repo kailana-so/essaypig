@@ -11,17 +11,17 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const reminderEmail = async (to: string, group: string) => {
 
   const schedule = group === MONTHLY 
-  ? '<a href="https://meet.google.com/vzj-jvsr-ybo">Join here.</a>.' 
-  : 'Pub?';
+  ? '<a href="https://meet.google.com/vzj-jvsr-ybo">Click here to join the call...</a>.' 
+  : '<a href="https://meet.google.com/ead-jgpg-uyd">Click here to join...</a> or meet at the pub?';
 
   const subject = group === MONTHLY 
-  ? `🐷📚 It's book club time (7:30pm)`
-  : `🐷📚 It's book club pub time!`;
+  ? `Book club starts at 7:30`
+  : `It's book club pub time!`;
 
   await resend.emails.send({
     from: 'oink@essaypig.com',
     to,
-    subject: `🐷📚 It's book club time (7:30pm)`,
+    subject: `${subject}`,
     html: `
       <div style="padding: 0 0 1rem 0; font-family: monospace, 'Inconsolata', sans-serif; font-size: 14px; color: #333;">
         <div style="text-align: left; margin-bottom: 1rem;">
@@ -31,9 +31,6 @@ export const reminderEmail = async (to: string, group: string) => {
         <br />
         <div style="text-align: left; margin: 1rem 0;">
           <p>Afternoon ${group} piggy, </p>
-          <p>
-            It's book club time (7:30pm).
-          </p>
           <p>
             ${schedule}
           </p>
@@ -52,6 +49,4 @@ export const reminderEmail = async (to: string, group: string) => {
       </div>
     `,
   });
-
-  console.log("Scheduled email sent to", to)
 };

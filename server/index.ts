@@ -8,7 +8,9 @@ import cors from 'cors';
 import presignRouter from './routes/presign';
 import summarisepigRouter from './routes/summarypig';
 import welcomeEmailRouter from './routes/welcomeEmail';
-import { scheduleFortnightlyBITEXT, scheduleMonthlyBBTC } from './jobs/scheduler';
+import { reminderFortnightlyBITEXT, scheduleFortnightlyBITEXT, scheduleMonthlyBBTC, reminderMonthlyBBTC } from './jobs/scheduler';
+import { test_reminderFortnightlyBITEXT, test_reminderMonthlyBBTC, test_scheduleFortnightlyBITEXT, test_scheduleMonthlyBBTC} from './jobs/schedulerTesting'
+
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -20,13 +22,21 @@ app.use('/api/presign', presignRouter);
 app.use('/api/summarypig', summarisepigRouter);
 app.use('/api/welcomeEmail', welcomeEmailRouter);
 
-
-if (process.env.NODE_ENV !== 'development') {
+/** TESTING */
+if (process.env.NODE_ENV === 'development') {
+  // test_scheduleFortnightlyBITEXT();
+  // test_scheduleMonthlyBBTC();
+  // test_reminderMonthlyBBTC()
+  // test_reminderFortnightlyBITEXT()
+} else { 
   // Start bbtc cron
+  scheduleFortnightlyBITEXT();
+  // start bitext cron
   scheduleMonthlyBBTC();
 
-  // start bitext cron
-  scheduleFortnightlyBITEXT();
+  // reminder emails
+  reminderMonthlyBBTC();
+  reminderFortnightlyBITEXT();
 }
 
 app.listen(port, () => {
