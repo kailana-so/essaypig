@@ -70,9 +70,33 @@ export function scheduleMonthlyBBTC() {
   });
 }
 
+function isThirdTuesday(date: Date): boolean {
+  if (date.getDay() !== 2) return false; // 2 = Tuesday
+
+  const year = date.getFullYear();
+  const month = date.getMonth();
+
+  // find first Tuesday of this month
+  const firstDay = new Date(year, month, 1);
+  const firstTuesday = new Date(
+    year,
+    month,
+    1 + ((2 - firstDay.getDay() + 7) % 7)
+  );
+
+  // third Tuesday is 14 days later
+  const thirdTuesday = new Date(firstTuesday);
+  thirdTuesday.setDate(firstTuesday.getDate() + 14);
+
+  return date.getDate() === thirdTuesday.getDate();
+}
+
 export function reminderMonthlyBBTC() {
   cron.schedule(reminderBbtc, async () => {
     try {
+
+      const now = new Date();
+      if (!isThirdTuesday(now)) return;
       const snapshot = await db.collection(USERS_COLLECTION)
         .where('group', '==', MONTHLY).get();
 
@@ -104,7 +128,7 @@ const scheduleBitext = '0 9 8-28 * *';
 /**
  * reminderBitext sends a schedules email for 1st and 3rd Friday of the month
  */
-const reminderBitext = '0 8 1-30 * 5'; 
+const reminderBitext = '0 8 7-30 * 5'; 
 
 
 function isSecondOrFourthMonday(date: Date): boolean {
@@ -114,10 +138,25 @@ function isSecondOrFourthMonday(date: Date): boolean {
 }
 
 function isFirstOrThirdFriday(date: Date): boolean {
-  if (date.getDay() !== 5) return false; // 5 = Friday
-  const weekOfMonth = Math.ceil(date.getDate() / 7);
-  return weekOfMonth === 1 || weekOfMonth === 3;
+  if (date.getDay() !== 5) return false; // must be Friday
+
+  const year = date.getFullYear();
+  const month = date.getMonth();
+
+  // find the first Friday of this month
+  const firstDay = new Date(year, month, 1);
+  const firstFriday = new Date(year, month, 1 + ((5 - firstDay.getDay() + 7) % 7));
+
+  // then the third Friday is two weeks later
+  const thirdFriday = new Date(firstFriday);
+  thirdFriday.setDate(firstFriday.getDate() + 14);
+
+  return (
+    date.getDate() === firstFriday.getDate() ||
+    date.getDate() === thirdFriday.getDate()
+  );
 }
+
 
 export function scheduleFortnightlyBITEXT() {
   cron.schedule(scheduleBitext, async () => {
