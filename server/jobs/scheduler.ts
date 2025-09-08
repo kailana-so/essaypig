@@ -37,7 +37,7 @@ const scheduleBbtc = '0 9 1 * *';
  * reminderBbtc sends a reminded email for 3rd Tuesday of the month
  */
 // 3rd Tuesday (guarded)
-const reminderBbtc = '0 9 15-21 * *'; // only runs 15–21; guard enforces Tuesday
+const reminderBbtc = '0 8 15-21 * *'; // only runs 15–21; guard enforces Tuesday
 
 export function scheduleMonthlyBBTC() {
   cron.schedule(scheduleBbtc, async () => {

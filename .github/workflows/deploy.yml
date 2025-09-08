@@ -35,15 +35,16 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
 
-      - name: Deploy via SSH
+      - name: Deploy via SSH (fixed heredoc)
+        shell: bash
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} bash -s <<EOF
-          #!/bin/bash
-          set -eo pipefail
-          
+          #!/usr/bin/env bash
+          set -euxo pipefail
+
           export NVM_DIR="\$HOME/.nvm"
           [ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
-          
+
           echo "Using Node.js 22 (for vite@7)"
           nvm install 22
           nvm use 22
@@ -52,22 +53,23 @@ jobs:
           sudo rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg || true
           npm uninstall -g yarn || true
           npm install -g yarn@1.22.22
-        
+
           cd /var/www/essaypig
- 
+
           echo "Pulling latest code..."
-          git stash || true
-          git pull origin main
-          git stash pop || true
+          git fetch origin main
+          git reset --hard origin/main
 
           echo "Creating frontend .env"
-          echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}" > client/.env
-          echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" >> client/.env
-          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}" >> client/.env
-          echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" >> client/.env
-          echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" >> client/.env
-          echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}" >> client/.env
-          
+          {
+            echo "VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}"
+            echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}"
+            echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}"
+            echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}"
+            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}"
+            echo "VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}"
+          } > client/.env
+
           echo "Creating backend .env"
           cat > server/.env <<ENV
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -81,27 +83,21 @@ jobs:
           NODE_ENV=${{ secrets.NODE_ENV }}
           FIREBASE_SERVICE_ACCOUNT_KEY=${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
           ENV
-          
-          echo "Pulling latest code..."
-          git stash || true
-          git pull origin main
-          git stash pop || true
-          
+
           echo "Installing PM2..."
           npm install -g pm2
-          
+
           echo "Installing dependencies..."
           yarn install --frozen-lockfile
-          
+
           echo "Building client..."
           yarn workspace client build
-          
+
           echo "Building server..."
           yarn workspace server build
-          
+
           echo "Starting server with PM2..."
           pm2 restart server || pm2 start server/dist/index.js --name server
-    
+
           echo "✅ Deployment complete"
           EOF
-          
