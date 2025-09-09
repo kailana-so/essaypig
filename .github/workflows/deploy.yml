@@ -37,10 +37,9 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} bash -s <<EOF
-          #!/bin/bash
-          set -eo pipefail
-          
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} <<EOF
+          set -e
+
           export NVM_DIR="\$HOME/.nvm"
           [ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
           
@@ -48,11 +47,13 @@ jobs:
           nvm install 22
           nvm use 22
 
-          # Clean Yarn v4/Corepack junk if any
-          sudo rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg || true
-          npm uninstall -g yarn || true
-          npm install -g yarn@1.22.22
-        
+          # # Clean Yarn v4/Corepack junk if any
+          # sudo rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg || true
+          # npm uninstall -g yarn || true
+          # npm install -g yarn@1.22.22
+          npm install -g yarn
+          npm install -g pm2
+          
           cd /var/www/essaypig
  
           echo "Pulling latest code..."
