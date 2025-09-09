@@ -35,23 +35,25 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
 
-      - name: Deploy via SSH
+      - name: Deploy via SSH (no nvm)
         run: |
           ssh -o StrictHostKeyChecking=no -T ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} 'bash -s' <<'EOF'
           set -euo pipefail
           set -x
           trap 'echo "❌ failed at: $BASH_COMMAND"; exit 1' ERR
 
-          export NVM_DIR="$HOME/.nvm"
-          # nvm.sh can return 3 when no default is set; don't let that kill the shell
-          set +e
-          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-          set -e
+          # Ensure yarn & pm2 exist (use Yarn Classic for --frozen-lockfile)
+          if ! command -v yarn >/dev/null 2>&1; then
+            sudo npm i -g yarn@1.22.22
+          fi
+          if ! command -v pm2 >/dev/null 2>&1; then
+            sudo npm i -g pm2
+          fi
 
-          echo "Using Node.js 22 (for vite@7)"
-          nvm install 22
-          nvm alias default 22
-          nvm use 22
+          node -v
+          npm -v
+          yarn -v
+          pm2 -v
 
           cd /var/www/essaypig
 
