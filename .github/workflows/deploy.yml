@@ -4,10 +4,6 @@ on:
   push:
     branches: [main]
 
-concurrency:
-  group: deploy-main
-  cancel-in-progress: true
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -41,8 +37,10 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} 'bash -s' <<'EOF'
+          ssh -o StrictHostKeyChecking=no -T ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} 'bash -s' <<'EOF'
           set -euo pipefail
+          set -x
+          trap 'echo "❌ failed at: $BASH_COMMAND"; exit 1' ERR
       
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
@@ -50,9 +48,6 @@ jobs:
           echo "Using Node.js 22 (for vite@7)"
           nvm install 22 >/dev/null
           nvm use 22
-
-          echo "Ensuring corepack/yarn is available..."
-          corepack enable || true
       
           cd /var/www/essaypig
       
@@ -94,9 +89,9 @@ jobs:
           yarn workspace server build
       
           echo "Starting server with PM2..."
-          command -v pm2 >/dev/null 2>&1 || npm i -g pm2
           pm2 restart server || pm2 start server/dist/index.js --name server
           pm2 save
       
           echo "✅ Deployment complete"
-        EOF
+          EOF
+        
