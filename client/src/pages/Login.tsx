@@ -49,7 +49,7 @@ export default function Login() {
 
   return (
     <div className="login-container">
-      <h4>{isSignUp ? 'Join the clurb' : 'You know the rules...'}</h4>
+      <h4>{isSignUp ? 'Willkommen' : 'You know the rules...'}</h4>
 
       <div className="login-form">
 
