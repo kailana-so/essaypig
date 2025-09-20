@@ -44,3 +44,22 @@ export async function getRandomResource(groupType: string) {
       summary
     };
   }
+
+  export type Summary = {
+    title: string;
+    body: string;
+    questions: { question1: string; question2: string };
+  };
+
+  export async function getSummary(groupType: string): Promise<{ id: string; summary: Summary }> {
+    const snap = await db
+      .collection(RESOURCES_COLLECTION)
+      .where('current', 'array-contains', groupType) // use the arg
+      .limit(1)
+      .get();
+  
+    const doc = snap.docs[0];
+    const summary = (doc.get('summary') as Summary);
+    console.log(summary, "summary")
+    return { id: doc.id, summary };
+  }

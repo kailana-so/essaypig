@@ -1,5 +1,6 @@
 import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -12,3 +13,4 @@ initializeApp({
 });
 
 export const db = getFirestore();
+export { FieldValue }

@@ -9,7 +9,7 @@ import summarisepigRouter from './routes/summarypig';
 import welcomeEmailRouter from './routes/welcomeEmail';
 import meetRouter from './routes/meetingRedirect';
 import { reminderFortnightlyBITEXT, scheduleFortnightlyBITEXT, scheduleMonthlyBBTC, reminderMonthlyBBTC } from './jobs/scheduler';
-// import { test_reminderFortnightlyBITEXT, test_reminderMonthlyBBTC, test_scheduleFortnightlyBITEXT, test_scheduleMonthlyBBTC} from './jobs/schedulerTesting'
+import { test_reminderFortnightlyBITEXT, test_reminderMonthlyBBTC, test_scheduleFortnightlyBITEXT, test_scheduleMonthlyBBTC} from './jobs/schedulerTesting'
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -25,6 +25,8 @@ app.use('/api/welcomeEmail', welcomeEmailRouter);
 if (process.env.NODE_ENV === 'development') {
   // test_scheduleFortnightlyBITEXT();
   // test_scheduleMonthlyBBTC();
+
+
   // test_reminderMonthlyBBTC()
   // test_reminderFortnightlyBITEXT()
 } else { 

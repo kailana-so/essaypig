@@ -8,15 +8,15 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const reminderEmail = async (to: string, group: string) => {
+export const reminderEmail = async (to: string, group: string, summary: { title: string, body: string, questions: { question1: string, question2: string } }) => {
 
   const schedule = group === MONTHLY
     ? `<a href="${meetLink('vzj-jvsr-ybo')}">Click here to join the call</a>.`
-    : `<a href="${meetLink('ead-jgpg-uyd')}">Click here to join…</a> or meet at the pub?`;
+    : `<a href="${meetLink('ead-jgpg-uyd')}">Click here at 6:30 to join…</a> or meet at the pub?`;
 
   const subject = group === MONTHLY 
-  ? `Book club starts at 7:30`
-  : `It's book club pub time!`;
+  ? `BBTC starts at 7:30`
+  : `It's BITEXT club pub time!`;
 
   await resend.emails.send({
     headers: {
@@ -35,7 +35,15 @@ export const reminderEmail = async (to: string, group: string) => {
         <br />
         <div style="text-align: left; margin: 1rem 0;">
           <p>Evening ${group} piggy, </p>
-          <p> It's time for book club. Did you read it?</p>
+          <p> It's time for book club.</p>
+          <br />
+           <h3>
+            ${summary.title}
+          </h3>
+          <ul>
+            <li><em>${summary.questions.question1}</em></li>
+            <li><em>${summary.questions.question2}</em></li>
+          </ul>
           <p>
             ${schedule}
           </p>

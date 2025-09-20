@@ -1,9 +1,9 @@
 import cron from 'node-cron';
 import { scheduledEmail } from '../email/scheduledEmail';
 import { reminderEmail } from '../email/reminderEmail';
-import { db } from '../services/firebase';
+import { db, FieldValue } from '../services/firebase';
 import { USERS_COLLECTION, MONTHLY, TYPE_PDF, TYPE_EPUB, FORNIGHTLY, RESOURCES_COLLECTION } from '../utils/constants';
-import { getRandomResource } from '../utils/getRandomResource';
+import { getRandomResource, getSummary } from '../utils/getRandomResource';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
@@ -60,10 +60,14 @@ export function scheduleMonthlyBBTC() {
         await scheduledEmail(email, group, type, resolvedUrl, summary);
       }, 2);
 
-      if (failed.length) {
-        console.error('[BBTC] Some emails failed to send:', failed.map(f => f.email.id));
+      if (failed.length === docs.length) {
+        console.error('[BBTC] ALL emails failed to send');
       } else {
-        await db.collection(RESOURCES_COLLECTION).doc(id!).update({ bbtc: true });
+        if (failed.length) {
+          console.error('[BBTC] Some emails failed to send:', failed.map(f => f.email.id));
+        }
+        //add up currency
+        await db.collection(RESOURCES_COLLECTION).doc(id!).update({ bbtc: true, current: FieldValue.arrayUnion(MONTHLY) });
       }
     } catch (err) {
       console.error('[BBTC] Error running monthly job:', err);
@@ -102,18 +106,24 @@ export function reminderMonthlyBBTC() {
         .where('group', '==', MONTHLY).get();
 
       const docs = snapshot.docs;
+      const {id, summary} = await getSummary(MONTHLY);
 
       const { failed } = await sendAllWithRateLimit(docs, async (doc) => {
         const email = doc.id;
-        const { group } = doc.data();
-        console.log(group, "TBBTC")
-
         if (!email) return;
-        await reminderEmail(email, MONTHLY);
+        await reminderEmail(email, MONTHLY, summary);
       }, 2);
 
-      if (failed.length) {
-        console.error('[BBTC] Some reminders failed:', failed.map(f => f.email.id));
+      if (failed.length === docs.length) {
+        console.error('[BBTC] ALL emails failed to send');
+      } else {
+        if (failed.length) {
+          console.error('[BBTC] Some emails failed to send:', failed.map(f => f.email.id));
+        }
+        //clean up currency
+        await db.collection(RESOURCES_COLLECTION).doc(id!).update({
+          current: FieldValue.arrayRemove(MONTHLY),
+        });
       }
     } catch (err) {
       console.error('[BBTC] Error running monthly reminder:', err);
@@ -185,13 +195,19 @@ export function scheduleFortnightlyBITEXT() {
         await scheduledEmail(email, group, type, resolvedUrl, summary);
       }, 2);
 
-      if (failed.length) {
-        console.error('[BITEXT] Some emails failed to send:', failed.map(f => f.email.id));
+      if (failed.length === docs.length) {
+        console.error('[BITEXT] ALL emails failed to send');
       } else {
+        if (failed.length) {
+          console.warn('[BITEXT] Some emails failed to send:', failed.map(f => f.email.id));
+        }
+        //add currency
         await db.collection(RESOURCES_COLLECTION).doc(id!).update({
           bitext: true,
-        });
+          current: FieldValue.arrayUnion(FORNIGHTLY)
+        });  
       }
+      
     } catch (err) {
       console.error('[BITEXT] Error running email job:', err);
     }
@@ -207,19 +223,29 @@ export function reminderFortnightlyBITEXT() {
     try {
       const snapshot = await db.collection(USERS_COLLECTION).where('group', '==', FORNIGHTLY).get();
       const docs =  snapshot.docs
-
+      const {id, summary} = await getSummary(FORNIGHTLY);
       const { failed } = await sendAllWithRateLimit(docs, async (doc) => {
         const email = doc.id;
         const { group } = doc.data();
 
         console.log(group)
         if (!email || !group) return;
-        await reminderEmail(email, group);
+        await reminderEmail(email, group, summary);
       }, 2);
 
-      if (failed.length) {
-        console.error('[BITEXT] Some reminders failed:', failed.map(f => f.email.id));
+      if (failed.length === docs.length) {
+        console.error('[BITEXT] ALL emails failed to send');
+      } else {
+        if (failed.length) {
+          console.warn('[BITEXT] Some emails failed to send:', failed.map(f => f.email.id));
+        }
+        //clean up currency
+        await db.collection(RESOURCES_COLLECTION).doc(id!).update({
+            current: FieldValue.arrayRemove(FORNIGHTLY),
+        }) 
       }
+
+
     } catch (err) {
       console.error('[BITEXT] Error running reminder email job:', err);
     }
