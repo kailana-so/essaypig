@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { MONTHLY, TYPE_EPUB, TYPE_PDF } from '../utils/constants';
+import { meetLink } from '../utils/meetlink';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -9,9 +10,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const scheduledEmail = async (to: string, group: string, type: string, url: string, summary: { title: string, body: string, questions: { question1: string, question2: string } }) => {
 
-  const schedule = group === MONTHLY 
-  ? 'Third Tuesday of each month - <a href="https://meet.google.com/vzj-jvsr-ybo">meeting link</a>, as per usual.'  
-  : 'Pub next Friday?';
+  const schedule =
+  group === MONTHLY
+    ? `<a href="${meetLink('vzj-jvsr-ybo')}">Click here to join the call</a>.`
+    : `<a href="${meetLink('ead-jgpg-uyd')}">Click here to join…</a> or meet at the pub?`;
 
   await resend.emails.send({
     from: 'oink@essaypig.com',
@@ -29,13 +31,13 @@ export const scheduledEmail = async (to: string, group: string, type: string, ur
           </p>
           <p>Your essay is: <a href="${url}" style="color: #3b82f6;">${summary.title}</a>.</p>
           ${type === TYPE_PDF || type === TYPE_EPUB ? '<p>The link will be available for 24 hours.</p>' : ''}
-          <br />
           <h3>
             ${summary.title}
           </h3>
           <p>
             ${summary.body}
           </p>
+          <br />
           <li><em>${summary.questions.question1}</em></li>
           <li><em>${summary.questions.question2}</em></li>
           <br />
