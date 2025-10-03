@@ -149,23 +149,23 @@ function isSecondOrFourthMonday(date: Date): boolean {
   return weekOfMonth === 2 || weekOfMonth === 4;
 }
 
-function isFirstOrThirdFriday(date: Date): boolean {
-  if (date.getDay() !== 5) return false; // must be Friday
+function isFirstOrThirdThursday(date: Date): boolean {
+  if (date.getDay() !== 4) return false; // must be Thursday
 
   const year = date.getFullYear();
   const month = date.getMonth();
 
-  // find the first Friday of this month
+  // find the first Thursday of this month
   const firstDay = new Date(year, month, 1);
-  const firstFriday = new Date(year, month, 1 + ((5 - firstDay.getDay() + 7) % 7));
+  const firstThursday = new Date(year, month, 1 + ((4 - firstDay.getDay() + 7) % 7));
 
-  // then the third Friday is two weeks later
-  const thirdFriday = new Date(firstFriday);
-  thirdFriday.setDate(firstFriday.getDate() + 14);
+  // then the third Thursday is two weeks later
+  const thirdThursday = new Date(firstThursday);
+  thirdThursday.setDate(firstThursday.getDate() + 14);
 
   return (
-    date.getDate() === firstFriday.getDate() ||
-    date.getDate() === thirdFriday.getDate()
+    date.getDate() === firstThursday.getDate() ||
+    date.getDate() === thirdThursday.getDate()
   );
 }
 
@@ -218,7 +218,7 @@ export function reminderFortnightlyBITEXT() {
   cron.schedule(reminderBitext, async () => {
 
     const now = new Date();
-    if (!isFirstOrThirdFriday(now)) return;
+    if (!isFirstOrThirdThursday(now)) return;
     
     try {
       const snapshot = await db.collection(USERS_COLLECTION).where('group', '==', FORNIGHTLY).get();
