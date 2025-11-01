@@ -12,7 +12,7 @@ export const scheduledEmail = async (to: string, group: string, type: string, ur
 
   const schedule =
   group === MONTHLY
-    ? `<a href="${meetLink('vzj-jvsr-ybo')}">Click here to join the call</a>.`
+    ? `<a href="${meetLink('vzj-jvsr-ybo')}">Click to join on the third Tuesday of the month.</a>.`
     : `<a href="${meetLink('ead-jgpg-uyd')}">Click here to join…</a> or meet at the pub?`;
 
   await resend.emails.send({
