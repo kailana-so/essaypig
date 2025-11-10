@@ -145,8 +145,30 @@ const reminderBitext = '0 8 7-30 * *'; // only runs 7–30; guard enforces Fri
 
 function isSecondOrFourthMonday(date: Date): boolean {
   if (date.getDay() !== 1) return false; // 1 = Monday
-  const weekOfMonth = Math.ceil(date.getDate() / 7);
-  return weekOfMonth === 2 || weekOfMonth === 4;
+
+  const year = date.getFullYear();
+  const month = date.getMonth();
+
+  // find first Monday of this month
+  const firstDay = new Date(year, month, 1);
+  const firstMonday = new Date(
+    year,
+    month,
+    1 + ((1 - firstDay.getDay() + 7) % 7)
+  );
+
+  // second Monday is 7 days later
+  const secondMonday = new Date(firstMonday);
+  secondMonday.setDate(firstMonday.getDate() + 7);
+
+  // fourth Monday is 14 days after second Monday
+  const fourthMonday = new Date(secondMonday);
+  fourthMonday.setDate(secondMonday.getDate() + 14);
+
+  return (
+    date.getDate() === secondMonday.getDate() ||
+    date.getDate() === fourthMonday.getDate()
+  );
 }
 
 function isFirstOrThirdThursday(date: Date): boolean {

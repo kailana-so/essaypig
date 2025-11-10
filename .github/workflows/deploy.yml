@@ -95,7 +95,7 @@ jobs:
           yarn workspace server build
 
           echo "Starting server with PM2..."
-          pm2 restart server || pm2 start server/dist/index.js --name server
+          pm2 restart essaypig-server || pm2 start server/dist/index.js --name essaypig-server
           pm2 save
 
           echo "✅ Deployment complete"
