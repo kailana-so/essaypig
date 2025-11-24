@@ -10,7 +10,7 @@ import welcomeEmailRouter from './routes/welcomeEmail';
 import meetRouter from './routes/meetingRedirect';
 import { sendNewTextBBTC, dayOfMonthlyBBTC, oneWeekReminderBBTC } from './jobs/bbtcScheduler';
 import { dayOfMonthlyBITEXT, sendNewTextBITEXT } from './jobs/bitextScheduler';
-import { test_dayOfMonthlyBBTC, test_dayOfMonthlybitext, test_oneWeekReminderBBTC, test_oneWeekReminderbitext, test_sendNewTextBBTC, test_sendNewTextbitext } from './jobs/schedulerTesting';
+// import { test_dayOfMonthlyBBTC, test_dayOfMonthlybitext, test_oneWeekReminderBBTC, test_oneWeekReminderbitext, test_sendNewTextBBTC, test_sendNewTextbitext } from './jobs/schedulerTesting';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -28,8 +28,8 @@ if (process.env.NODE_ENV === 'development') {
   // test_sendNewTextbitext();
   // test_oneWeekReminderBBTC();
   // test_oneWeekReminderbitext();
-  test_dayOfMonthlyBBTC();
-  test_dayOfMonthlybitext();
+  // test_dayOfMonthlyBBTC();
+  // test_dayOfMonthlybitext();
 } else { 
   // BITEXT cron
   sendNewTextBITEXT();
