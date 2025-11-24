@@ -60,6 +60,5 @@ export async function getRandomResource(groupType: string) {
   
     const doc = snap.docs[0];
     const summary = (doc.get('summary') as Summary);
-    console.log(summary, "summary")
     return { id: doc.id, summary };
   }

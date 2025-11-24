@@ -1,46 +1,44 @@
-import { BBTC_GROUP } from '../utils/constants';
 import { Resend } from 'resend';
+import { BBTC_GROUP } from '../utils/constants';
 import dotenv from 'dotenv';
 import path from 'path';
+import { meetLink } from '../utils/meetlink';
 
-// Load .env from server directory (where it's created during deployment)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const welcomeEmail = async (to: string, group: string) => {
+export const dayOfEmail = async (to: string, group: string) => {
 
-  const schedule = group === BBTC_GROUP 
-  ? 'Essays will be picked at random and emailed on the 1st of the month with a link to the google hang out.' 
-  : 'Essays will be picked at random and emailed on the 1st of the month with a link to the google hang out.' 
+  const schedule = group === BBTC_GROUP
+    ? `<a href="${meetLink('vzj-jvsr-ybo')}">Click here at 7:30 to join the call...</a>.`
+    : `<a href="${meetLink('ead-jgpg-uyd')}">Click here at 7:00 to join...</a> or meet at the pub?`;
 
+  const subject = group === BBTC_GROUP 
+  ? `BBTC starts at 7:30`
+  : `Book club starts at 7:00`;
 
   await resend.emails.send({
+    headers: {
+      'List-Unsubscribe': `<https://essaypig.com/unsubscribe?email=${encodeURIComponent(to)}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+    },
     from: 'oink@essaypig.com',
     to,
-    subject: '🐷📚 Welcome to Essay Pig',
+    subject: `🐷📚 ${subject}`,
     html: `
       <div style="padding: 0 0 1rem 0; font-family: monospace, 'Inconsolata', sans-serif; font-size: 14px; color: #333;">
         <div style="text-align: left; margin-bottom: 1rem;">
           <img src="https://essaypig.com/essay-pig.png" alt="Essay Pig logo" style="height: 40px; width: auto; display: block;" />
         </div>
         <br />
+        <br />
         <div style="text-align: left; margin: 1rem 0;">
-          <p>Hi ${group} piggy, you're all set up!</p>
-          <br />
-          <p>The rules are simple:</p>
-          <ol style="padding-left: 1rem;">
-            <li>Links, PDFs and EPUBs are supported. (Links kinda preferred though)</li>
-            <li>Nothing too big to handle – MAX 30MB.</li>
-            <li>Don't spam the system.</li>
-            <li>It's a private group, so new members need to be approved first.</li>
-          </ol>
+          <p>Evening ${group} piggy, </p>
+          <p> It's time for book club.</p>
           <br />
           <p>
             ${schedule}
-          </p>
-          <p>
-            To get started, head over to <a href="https://essaypig.com" style="color: #3b82f6;">essaypig.com</a> and start feeding the pig.
           </p>
         </div>
 
@@ -57,5 +55,4 @@ export const welcomeEmail = async (to: string, group: string) => {
       </div>
     `,
   });
-  console.log("Welcome email sent to", to)
 };

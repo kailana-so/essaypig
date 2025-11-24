@@ -1,31 +1,24 @@
 import { Resend } from 'resend';
-import { MONTHLY } from '../utils/constants';
+import { BBTC_GROUP, TYPE_EPUB, TYPE_PDF } from '../utils/constants';
+import { meetLink } from '../utils/meetlink';
 import dotenv from 'dotenv';
 import path from 'path';
-import { meetLink } from '../utils/meetlink';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const reminderEmail = async (to: string, group: string, summary: { title: string, body: string, questions: { question1: string, question2: string } }) => {
+export const newTextEmail = async (to: string, group: string, type: string, url: string, summary: { title: string, body: string, questions: { question1: string, question2: string } }) => {
 
-  const schedule = group === MONTHLY
-    ? `<a href="${meetLink('vzj-jvsr-ybo')}">Click here to join the call</a>.`
-    : `<a href="${meetLink('ead-jgpg-uyd')}">Click here at 6:30 to join…</a> or meet at the pub?`;
-
-  const subject = group === MONTHLY 
-  ? `BBTC starts at 7:30`
-  : `It's BITEXT club pub time!`;
+  const schedule =
+  group === BBTC_GROUP
+    ? `<a href="${meetLink('vzj-jvsr-ybo')}">Click to join on the third Monday of the month.</a>.`
+    : `<a href="${meetLink('ead-jgpg-uyd')}">Click to join on the third Thursday of the month...</a> or meet at the pub?`;
 
   await resend.emails.send({
-    headers: {
-      'List-Unsubscribe': `<https://essaypig.com/unsubscribe?email=${encodeURIComponent(to)}>`,
-      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
-    },
     from: 'oink@essaypig.com',
     to,
-    subject: `🐷📚 ${subject}`,
+    subject: `🐷📚 Your new essay is here`,
     html: `
       <div style="padding: 0 0 1rem 0; font-family: monospace, 'Inconsolata', sans-serif; font-size: 14px; color: #333;">
         <div style="text-align: left; margin-bottom: 1rem;">
@@ -34,16 +27,20 @@ export const reminderEmail = async (to: string, group: string, summary: { title:
         <br />
         <br />
         <div style="text-align: left; margin: 1rem 0;">
-          <p>Evening ${group} piggy, </p>
-          <p> It's time for book club.</p>
-          <br />
-           <h3>
+          <p>Evening ${group} piggy, 
+          </p>
+          <p>Your essay is: <a href="${url}" style="color: #3b82f6;">${summary.title}</a>.</p>
+          ${type === TYPE_PDF || type === TYPE_EPUB ? '<p>The link will be available for 24 hours.</p>' : ''}
+          <h3>
             ${summary.title}
           </h3>
-          <ul>
-            <li><em>${summary.questions.question1}</em></li>
-            <li><em>${summary.questions.question2}</em></li>
-          </ul>
+          <p>
+            ${summary.body}
+          </p>
+          <br />
+          <li><em>${summary.questions.question1}</em></li>
+          <li><em>${summary.questions.question2}</em></li>
+          <br />
           <p>
             ${schedule}
           </p>

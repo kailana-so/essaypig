@@ -8,8 +8,9 @@ import presignRouter from './routes/presign';
 import summarisepigRouter from './routes/summarypig';
 import welcomeEmailRouter from './routes/welcomeEmail';
 import meetRouter from './routes/meetingRedirect';
-import { reminderFortnightlyBITEXT, scheduleFortnightlyBITEXT, scheduleMonthlyBBTC, reminderMonthlyBBTC } from './jobs/scheduler';
-// import { test_reminderFortnightlyBITEXT, test_reminderMonthlyBBTC, test_scheduleFortnightlyBITEXT, test_scheduleMonthlyBBTC} from './jobs/schedulerTesting'
+import { sendNewTextBBTC, dayOfMonthlyBBTC, oneWeekReminderBBTC } from './jobs/bbtcScheduler';
+import { dayOfMonthlyBITEXT, sendNewTextBITEXT } from './jobs/bitextScheduler';
+import { test_dayOfMonthlyBBTC, test_dayOfMonthlybitext, test_oneWeekReminderBBTC, test_oneWeekReminderbitext, test_sendNewTextBBTC, test_sendNewTextbitext } from './jobs/schedulerTesting';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -23,21 +24,22 @@ app.use('/api/welcomeEmail', welcomeEmailRouter);
 
 /** TESTING */
 if (process.env.NODE_ENV === 'development') {
-  // test_scheduleFortnightlyBITEXT();
-  // test_scheduleMonthlyBBTC();
-
-
-  // test_reminderMonthlyBBTC()
-  // test_reminderFortnightlyBITEXT()
+  // test_sendNewTextBBTC();
+  // test_sendNewTextbitext();
+  // test_oneWeekReminderBBTC();
+  // test_oneWeekReminderbitext();
+  test_dayOfMonthlyBBTC();
+  test_dayOfMonthlybitext();
 } else { 
-  // Start bbtc cron
-  scheduleFortnightlyBITEXT();
-  // start bitext cron
-  scheduleMonthlyBBTC();
+  // BITEXT cron
+  sendNewTextBITEXT();
+  dayOfMonthlyBITEXT();
 
-  // reminder emails
-  reminderMonthlyBBTC();
-  reminderFortnightlyBITEXT();
+  // BBTC cron
+  sendNewTextBBTC();
+  oneWeekReminderBBTC();
+  dayOfMonthlyBBTC();
+
 }
 
 app.listen(port, () => {
