@@ -59,7 +59,7 @@ export function sendNewTextBITEXT() {
           console.error('[BITEXT] Some emails failed to send:', failed.map(f => f.email.id));
         }
         //add up currency
-        await db.collection(RESOURCES_COLLECTION).doc(id!).update({ BITEXT: true, current: FieldValue.arrayUnion(BITEXT_GROUP) });
+        await db.collection(RESOURCES_COLLECTION).doc(id!).update({ bitext: true, current: FieldValue.arrayUnion(BITEXT_GROUP) });
       }
     } catch (err) {
       console.error('[BITEXT] Error running BITEXT_GROUP job:', err);

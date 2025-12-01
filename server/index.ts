@@ -9,7 +9,7 @@ import summarisepigRouter from './routes/summarypig';
 import welcomeEmailRouter from './routes/welcomeEmail';
 import meetRouter from './routes/meetingRedirect';
 import { sendNewTextBBTC, dayOfMonthlyBBTC, oneWeekReminderBBTC } from './jobs/bbtcScheduler';
-import { dayOfMonthlyBITEXT, sendNewTextBITEXT } from './jobs/bitextScheduler';
+import { dayOfMonthlyBITEXT, oneWeekReminderBITEXT, sendNewTextBITEXT } from './jobs/bitextScheduler';
 // import { test_dayOfMonthlyBBTC, test_dayOfMonthlybitext, test_oneWeekReminderBBTC, test_oneWeekReminderbitext, test_sendNewTextBBTC, test_sendNewTextbitext } from './jobs/schedulerTesting';
 
 const app = express();
@@ -33,6 +33,7 @@ if (process.env.NODE_ENV === 'development') {
 } else { 
   // BITEXT cron
   sendNewTextBITEXT();
+  oneWeekReminderBITEXT();
   dayOfMonthlyBITEXT();
 
   // BBTC cron
