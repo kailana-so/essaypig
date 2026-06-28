@@ -11,6 +11,7 @@ import ResourceList from './components/ResourceList'
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -39,7 +40,7 @@ function App() {
           <div style={{ textAlign: 'left', padding: "5px" }}>
             <img src={essaypigLogo} className="logo react" alt="Essay Pig logo" />
           </div>
-          <div>
+          <div onClick={() => setShowLogin(false)}>
           <pre style={{ fontFamily: 'monospace', fontSize: '6.5px', lineHeight: '1', textAlign: 'center' }}>
 {`███████╗███████╗███████╗ █████╗ ██╗   ██╗    ██████╗ ██╗ ██████╗ 
 ██╔════╝██╔════╝██╔════╝██╔══██╗╚██╗ ██╔╝    ██╔══██╗██║██╔════╝ 
@@ -50,33 +51,19 @@ function App() {
           </pre>
         </div>
         <div>
-            {user && (
-            <a 
-              onClick={handleLogout}
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="30" 
-                height="30" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="1.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
-                <path d="M9 12h12l-3 -3" />
-                <path d="M18 15l3 -3" />
-              </svg>
-              
+          {user ? (
+            <a onClick={handleLogout} style={{ cursor: 'pointer' }} className="login-toggle">
+              sign out
+            </a>
+          ) : (
+            <a onClick={() => setShowLogin(s => !s)} className="login-toggle">
+              sign in
             </a>
           )}
         </div>
       </div>
         <main>
-          {user ? <Gobbler /> : <Login />}
+          {user ? <Gobbler /> : showLogin && <Login />}
           <ResourceList />
         </main>
     </div>

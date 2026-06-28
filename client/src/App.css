@@ -1,3 +1,21 @@
+.login-toggle {
+  cursor: pointer;
+  /* font-size: 13px; */
+  border: 2px solid black;
+  border-radius: 9999px;
+  padding: 5px;
+}
+
+.login-toggle:active {
+  cursor: pointer;
+  background-color:black;
+  border: 2px solid black;
+  border-radius: 9999px;
+  padding: 5px;
+  color: white;
+}
+
+
 #root {
   margin: 0;
   padding: 0 1rem 0 1rem;

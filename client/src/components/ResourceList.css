@@ -1,11 +1,11 @@
 .resource-list {
   width: 100%;
-  margin: 0 auto 2rem auto;
+  margin: 1rem auto 3rem auto;
   border-top: 1px solid black;
 }
 
 .resource-list__scroll {
-  max-height: 60vh;
+  height: 100vh;
   overflow-y: auto;
 }
 
