@@ -41,7 +41,7 @@ function App() {
             <img src={essaypigLogo} className="logo react" alt="Essay Pig logo" />
           </div>
           <div onClick={() => setShowLogin(false)}>
-          <pre style={{ fontFamily: 'monospace', fontSize: '6.5px', lineHeight: '1', textAlign: 'center' }}>
+          <pre className="ascii-banner">
 {`███████╗███████╗███████╗ █████╗ ██╗   ██╗    ██████╗ ██╗ ██████╗ 
 ██╔════╝██╔════╝██╔════╝██╔══██╗╚██╗ ██╔╝    ██╔══██╗██║██╔════╝ 
 █████╗  ███████╗███████╗███████║ ╚████╔╝     ██████╔╝██║██║  ███╗
@@ -52,7 +52,7 @@ function App() {
         </div>
         <div>
           {user ? (
-            <a onClick={handleLogout} style={{ cursor: 'pointer' }} className="login-toggle">
+            <a onClick={handleLogout} className="login-toggle">
               sign out
             </a>
           ) : (

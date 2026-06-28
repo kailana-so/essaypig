@@ -16,6 +16,19 @@
 }
 
 
+.ascii-banner {
+  font-family: monospace;
+  font-size: 7.5px;
+  line-height: 1;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .ascii-banner {
+    font-size: 4px;
+  }
+}
+
 #root {
   margin: 0;
   padding: 0 1rem 0 1rem;
