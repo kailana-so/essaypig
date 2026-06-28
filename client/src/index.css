@@ -1,13 +1,9 @@
 :root {
-  font-family: 'Inconsolata', monospace;
+  font-family: 'Bricolage Grotesque', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
+  background-color: #fff;
+  color: #000;
 }
 
 h1 {
@@ -16,20 +12,22 @@ h1 {
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
+  border-radius: 5px;
+  border: 1px solid #000;
   padding: 0.6em 1.2em;
   font-size: 1em;
-  font-weight: 500;
+  font-weight: 800;
   font-family: inherit;
-  background-color: #eadcd7;
+  background-color: #fff;
+  color: #000;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: background-color 0.2s;
   margin-bottom: 1rem;
 }
 
 button:hover {
-  background-color: #ffc9c9;
+  background-color: #000;
+  color: #fff;
 }
 
 /* Login Form Styles */
@@ -37,8 +35,6 @@ button:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  padding: 2rem;
 }
 
 .login-form {
@@ -51,22 +47,23 @@ button:hover {
 
 .login-input {
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid #000;
   border-radius: 6px;
   font-size: 1rem;
   font-family: inherit;
+  background-color: #fff;
+  color: #000;
 }
 
 .error {
-  color: #c33;
+  color: #000;
   margin: 0;
 }
-
 
 .link, .link:hover {
   background: none;
   border: none;
-  color: #007bff;
+  color: #000;
   cursor: pointer;
   text-decoration: underline;
   font-size: 0.875rem;
@@ -78,20 +75,21 @@ button:hover {
   display: inline-block;
   padding: 0.8rem 1.6rem;
   margin-right: 0.5rem;
-  border: 1px solid #ccc;
+  border: 1px solid #000;
   border-radius: 9999px;
   font-size: 0.8rem;
-  background-color: #f8f8f8;
-  color: #333;
+  background-color: #fff;
+  color: #000;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .badge.active {
-  border-color: #ffaaaa;
-  background-color: #ffecec;
+  background-color: #000;
+  color: #fff;
 }
 
 .badge:hover {
-  border-color: #ffaaaa;
+  background-color: #000;
+  color: #fff;
 }

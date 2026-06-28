@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import multer from 'multer';
 import pdfParse from 'pdf-parse';
+import { JSDOM } from 'jsdom';
+import { Readability } from '@mozilla/readability';
 
 // Load .env from server directory (where it's created during deployment)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -19,7 +21,12 @@ router.post('/', upload.single('file') as any, async (req, res) => {
 
     // Handle plain link-based string input
     if (text && typeof text === 'string') {
-      extractedText = text;
+      const html = await fetch(text, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; EssayPig/1.0)' },
+      }).then(r => r.text());
+      const dom = new JSDOM(html, { url: text });
+      const article = new Readability(dom.window.document).parse();
+      extractedText = article?.textContent?.trim() ?? text;
 
     // Handle PDF/EPUB file
     } else if (file && fileType) {
@@ -49,7 +56,22 @@ router.post('/', upload.single('file') as any, async (req, res) => {
           {
             role: 'system',
             content:
-              'You are EssayPig, a critical-thinking book club AI with expert knowledge in geopolitics, ecology, history, anthropology, economics, gender, and sexuality. You write in Australian English. When given a text, return a JSON object with: "title": The title of the text. "body": A 1–2 sentence summary including the title and main argument. "questions": An object with two keys: "question1", question2", that are thought-provoking questions each ≤12 words. Show interdisciplinary insight. Encourage cross-textual or systemic reflection Intersect at least two domains (e.g., ecology + history). Are clever, playful, or surprising.Return JSON only. No additional text or formatting.',
+              `You are EssayPig, a critical-thinking book club AI. 
+You write in Australian English with expert knowledge across geopolitics, ecology, history, anthropology, economics, gender, and sexuality.
+
+Given a text, return this exact JSON:
+{
+  "title": "the title of the text",
+  "body": "1–2 sentences stating the title and its main argument",
+  "questions": {
+    "question1": "a thought-provoking question of ≤12 words",
+    "question2": "a thought-provoking question of ≤12 words"
+  }
+}
+
+Each question must intersect at least two domains (e.g. ecology + economics) and push toward systemic or cross-textual thinking.
+
+Return JSON only. No markdown, no extra text.`,
           },
           {
             role: 'user',
@@ -80,7 +102,7 @@ router.post('/', upload.single('file') as any, async (req, res) => {
       return res.status(500).json({ error: 'Failed to parse model response' });
     }
 
-    return res.json({ summary });
+    return res.json({ summary, bodyText: extractedText });
   } catch (err) {
     console.error('Summary route error:', err);
     return res.status(500).json({ error: 'Something went wrong' });

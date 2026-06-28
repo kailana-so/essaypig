@@ -79,7 +79,7 @@ export default function Login() {
         </button>
       </div>
       {error && <p className="error">{error}</p>}
-      <div style={{ textAlign: 'center', fontSize: '0.875rem', color: '#666' }}>
+      <div style={{ textAlign: 'center', fontSize: '0.875rem', color: '#000' }}>
         Or...
         <button
           onClick={() => setIsSignUp(!isSignUp)}

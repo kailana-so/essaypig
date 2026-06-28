@@ -1,24 +1,17 @@
-import { BBTC_GROUP } from '../utils/constants';
 import { Resend } from 'resend';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load .env from server directory (where it's created during deployment)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const welcomeEmail = async (to: string, group: string) => {
 
-  const schedule = group === BBTC_GROUP 
-  ? 'Essays will be picked at random and emailed on the 1st of the month with a link to the google hang out.' 
-  : 'Essays will be picked at random and emailed on the 1st of the month with a link to the google hang out.' 
-
-
   await resend.emails.send({
     from: 'oink@essaypig.com',
     to,
-    subject: '🐷📚 Welcome to Essay Pig',
+    subject: '🐷: Welcome to Essay Pig',
     html: `
       <div style="padding: 0 0 1rem 0; font-family: monospace, 'Inconsolata', sans-serif; font-size: 14px; color: #333;">
         <div style="text-align: left; margin-bottom: 1rem;">
@@ -36,9 +29,7 @@ export const welcomeEmail = async (to: string, group: string) => {
             <li>It's a private group, so new members need to be approved first.</li>
           </ol>
           <br />
-          <p>
-            ${schedule}
-          </p>
+          <p>Essays will be picked at random and emailed fortnightly.</p>
           <p>
             To get started, head over to <a href="https://essaypig.com" style="color: #3b82f6;">essaypig.com</a> and start feeding the pig.
           </p>

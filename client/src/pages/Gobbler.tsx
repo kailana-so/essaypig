@@ -66,15 +66,15 @@ export default function Gobbler() {
           body: formData,
         });
 
-        const { summary } = await summaryRes.json();
+        const { summary, bodyText } = await summaryRes.json();
 
         setSummary([summary.title, summary.body]);
         await addDoc(collection(db, "resources"), {
           url,
           type: "link",
+          bodyText: bodyText ?? null,
           summary: summary,
-          bbtc: false,
-          bitext: false,
+          nk: false,
           created_at: serverTimestamp(),
         });
         setUrl("");
@@ -118,8 +118,7 @@ export default function Gobbler() {
           fileUrl: s3FileUrl,
           summary: summary,
           type: file.type.includes('epub') ? 'epub' : 'pdf',
-          bbtc: false,
-          bitext: false,
+          nk: false,
           created_at: serverTimestamp(),
         });
 
@@ -139,7 +138,7 @@ export default function Gobbler() {
       display: 'flex', 
       flexDirection: 'column', 
       alignItems: 'center', 
-      padding: '2rem' 
+      padding: '1.3rem 0 0.2rem 0' 
     }}>
       <div style={{ 
         width: '100%', 
@@ -170,7 +169,7 @@ export default function Gobbler() {
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder="Paste an essay link"
-              style={{ width: '100%', border: '1px solid #ddd', borderRadius: '4px', padding: '0.7rem'}}
+              style={{ width: '100%', border: '1px solid #000', borderRadius: '4px', padding: '0.7rem'}}
             />
           ) : (
             <input
@@ -178,7 +177,7 @@ export default function Gobbler() {
               type="file"
               accept=".pdf,.epub"
               onChange={e => validateAndSetFile(e.target.files?.[0] || null)}
-              style={{ width: '100%', border: '1px solid #ddd', borderRadius: '4px', padding: '0.5rem'}}
+              style={{ width: '100%', border: '1px solid #000', borderRadius: '4px', padding: '0.5rem'}}
             />
           )}
         </div>

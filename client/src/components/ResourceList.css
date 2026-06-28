@@ -1,0 +1,32 @@
+.resource-list {
+  width: 100%;
+  margin: 0 auto 2rem auto;
+  border-top: 1px solid black;
+}
+
+.resource-list__scroll {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.resource-list__item {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #000;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.resource-list__item:active {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #000;
+  cursor: pointer;
+  background-color: #000;
+  font-size: 18px;
+}
+
+.resource-list__synopsis {
+  margin: 0.5rem 0 0.75rem 1rem;
+  font-size: 15px;
+  color: #000;
+  line-height: 1.5;
+}
