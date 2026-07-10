@@ -48,7 +48,7 @@ const Library = ({ user }: LibraryProps) => {
     try {
       const presignedUrl = await getPresignedUrl(user.uid, file);
       await uploadFileToS3(presignedUrl, file);
-      const summary = await summariseBook(file);
+      const summary = await summariseBook(user.uid, file);
       await addBook(user.uid, file.name, summary);
       await refreshBooks();
     } catch (err) {

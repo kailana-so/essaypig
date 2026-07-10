@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
-import multer from 'multer';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import pdfParse from 'pdf-parse';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
@@ -10,12 +10,18 @@ import { Readability } from '@mozilla/readability';
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const router = Router();
-const upload = multer();
 
-router.post('/', upload.single('file') as any, async (req, res) => {
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
+
+router.post('/', async (req, res) => {
   try {
-    const { text, fileType, fileName } = req.body;
-    const file = req.file;
+    const { text, fileType, fileName, userId } = req.body;
 
     let extractedText = '';
 
@@ -28,10 +34,18 @@ router.post('/', upload.single('file') as any, async (req, res) => {
       const article = new Readability(dom.window.document).parse();
       extractedText = article?.textContent?.trim() ?? text;
 
-    // Handle PDF/EPUB file
-    } else if (file && fileType) {
+    // Handle an already-uploaded PDF/EPUB — the client sends only the key,
+    // and we read the file from S3 rather than accepting a re-upload.
+    } else if (fileName && fileType) {
       if (fileType === 'application/pdf') {
-        const pdfData = await pdfParse(file.buffer);
+        // Same key scheme as the presign route: library uploads are
+        // per-user, Gobbler uploads use the flat key.
+        const key = userId ? `${userId}/library/${fileName}` : (fileName as string);
+        const object = await s3.send(
+          new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: key })
+        );
+        const buffer = Buffer.from(await object.Body!.transformToByteArray());
+        const pdfData = await pdfParse(buffer);
         const pages = pdfData.text.split('\n\n');
         extractedText = pages.slice(0, 3).join('\n\n'); // First ~3 pages
 

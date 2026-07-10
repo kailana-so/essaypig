@@ -57,13 +57,10 @@ export default function Gobbler() {
     try {
       if (mode === 'link' && url) {
         setSummary([]);
-        const formData = new FormData();
-        formData.append('text', url);
-        formData.append('fileType', 'link');
-
         const summaryRes = await fetch('/api/summarypig', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: url, fileType: 'link' }),
         });
 
         const { summary, bodyText } = await summaryRes.json();
@@ -99,14 +96,12 @@ export default function Gobbler() {
         // Strip query params to get the file URL
         const s3FileUrl = presignedUrl.split('?')[0];
 
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('fileType', file.type);
-        formData.append('fileName', file.name);
-
+        // The file is already in S3 — send only its key and let the
+        // server fetch it, instead of re-uploading the whole file.
         const summaryRes = await fetch('/api/summarypig', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: file.name, fileType: file.type }),
         });
 
         const { summary } = await summaryRes.json();

@@ -47,15 +47,20 @@ export const uploadFileToS3 = async (url: string, file: File) => {
 };
 
 // Ask DeepSeek (via the summarypig route) for a title and summary.
+// The file is already in S3 by this point, so we only send its key —
+// the server fetches it from the bucket itself.
 // Best-effort: a failed summary shouldn't block the upload.
-export const summariseBook = async (file: File): Promise<BookSummary | null> => {
+export const summariseBook = async (userId: string, file: File): Promise<BookSummary | null> => {
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('fileType', file.type || 'application/octet-stream');
-    formData.append('fileName', file.name);
-
-    const response = await fetch('/api/summarypig', { method: 'POST', body: formData });
+    const response = await fetch('/api/summarypig', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        fileName: file.name,
+        fileType: file.type || 'application/octet-stream',
+      }),
+    });
     if (!response.ok) return null;
     const { summary } = await response.json();
     return summary ?? null;
