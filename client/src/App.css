@@ -2,7 +2,7 @@
   cursor: pointer;
   /* font-size: 13px; */
   border: 2px solid black;
-  border-radius: 9999px;
+  /* border-radius: 9999px; */
   padding: 5px;
 }
 
@@ -10,11 +10,33 @@
   cursor: pointer;
   background-color:black;
   border: 2px solid black;
-  border-radius: 9999px;
+  /* border-radius: 9999px; */
   padding: 5px;
   color: white;
 }
 
+
+.tab-bar {
+  display: flex;
+  border-bottom: 2px solid #000;
+  margin-top: 1rem;
+}
+
+.tab,
+.tab:hover {
+  padding: 0.4rem 2rem;
+  border: 2px solid #000;
+  border-bottom: none;
+  /* border-radius: 0; */
+  background-color: #fff;
+  color: #000;
+}
+
+.tab.active,
+.tab.active:hover {
+  background-color: #000;
+  color: #fff;
+}
 
 .ascii-banner {
   font-family: monospace;

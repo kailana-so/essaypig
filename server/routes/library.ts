@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -17,28 +17,24 @@ const s3 = new S3Client({
   },
 });
 
+// Returns a presigned read URL for a book in the user's library
 router.get('/', async (req, res) => {
-  const { fileName, fileType, userId } = req.query;
+  const { userId, fileName } = req.query;
 
-  if (!fileName || !fileType) {
-    return res.status(400).json({ error: 'Missing fileName or fileType' });
+  if (!userId || !fileName) {
+    return res.status(400).json({ error: 'Missing userId or fileName' });
   }
 
-  // Library uploads are scoped per user; Gobbler uploads keep the flat key.
-  const key = userId ? `${userId}/library/${fileName}` : (fileName as string);
-
-  const command = new PutObjectCommand({
+  const command = new GetObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,
-    Key: key,
-    ContentType: fileType as string,
-    ACL: 'private',
+    Key: `${userId}/library/${fileName}`,
   });
 
   try {
-    const url = await getSignedUrl(s3, command, { expiresIn: 60 });
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
     return res.json({ url });
   } catch (err) {
-    console.error('Presign error:', err);
+    console.error('Library presign error:', err);
     return res.status(500).json({ error: 'Couldn\'t generate URL' });
   }
 });

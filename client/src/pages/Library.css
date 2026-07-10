@@ -1,0 +1,48 @@
+.library-upload label {
+  cursor: pointer;
+  display: block;
+}
+
+.book-viewer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.close-button {
+  align-self: flex-end;
+  margin: 10px;
+}
+
+.pdf-container {
+  flex: 1;
+  margin: 10px;
+  border: none;
+  width: calc(100% - 20px);
+}
+
+.epub-viewer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.epub-container {
+  flex: 1;
+  margin: 10px;
+  min-height: 0;
+}
+
+.epub-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+}
