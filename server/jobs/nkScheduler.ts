@@ -40,6 +40,7 @@ export function sendNewTextNK() {
         .where('group', '==', NK_GROUP).get();
 
       const docs = snapshot.docs;
+      if (!docs.length) return console.warn('[NK] No recipients in group — nothing sent.');
 
       const { failed } = await sendAllWithRateLimit(docs, async (doc) => {
         const email = doc.id;

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { AuthedRequest } from '../middleware/requireAuth';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
@@ -19,15 +20,16 @@ const s3 = new S3Client({
 
 // Returns a presigned read URL for a book in the user's library
 router.get('/', async (req, res) => {
-  const { userId, fileName } = req.query;
+  const { fileName } = req.query;
+  const uid = (req as AuthedRequest).uid;
 
-  if (!userId || !fileName) {
-    return res.status(400).json({ error: 'Missing userId or fileName' });
+  if (!fileName) {
+    return res.status(400).json({ error: 'Missing fileName' });
   }
 
   const command = new GetObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,
-    Key: `${userId}/library/${fileName}`,
+    Key: `${uid}/library/${fileName}`,
   });
 
   try {

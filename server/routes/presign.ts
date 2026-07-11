@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { AuthedRequest } from '../middleware/requireAuth';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
@@ -25,7 +26,9 @@ router.get('/', async (req, res) => {
   }
 
   // Library uploads are scoped per user; Gobbler uploads keep the flat key.
-  const key = userId ? `${userId}/library/${fileName}` : (fileName as string);
+  // The path always uses the verified uid, never the client-sent userId.
+  const uid = (req as AuthedRequest).uid;
+  const key = userId ? `${uid}/library/${fileName}` : (fileName as string);
 
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,

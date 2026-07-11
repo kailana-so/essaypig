@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { AuthedRequest } from '../middleware/requireAuth';
 import dotenv from 'dotenv';
 import path from 'path';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
@@ -39,8 +40,10 @@ router.post('/', async (req, res) => {
     } else if (fileName && fileType) {
       if (fileType === 'application/pdf') {
         // Same key scheme as the presign route: library uploads are
-        // per-user, Gobbler uploads use the flat key.
-        const key = userId ? `${userId}/library/${fileName}` : (fileName as string);
+        // per-user (always under the verified uid), Gobbler uploads use
+        // the flat key.
+        const uid = (req as AuthedRequest).uid;
+        const key = userId ? `${uid}/library/${fileName}` : (fileName as string);
         const object = await s3.send(
           new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: key })
         );

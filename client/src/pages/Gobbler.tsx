@@ -1,4 +1,5 @@
 import { db } from "../services/firebase";
+import { authedFetch } from "../services/api";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useState } from "react";
 import { MAX_SIZE_MB } from "./constants";
@@ -57,7 +58,7 @@ export default function Gobbler() {
     try {
       if (mode === 'link' && url) {
         setSummary([]);
-        const summaryRes = await fetch('/api/summarypig', {
+        const summaryRes = await authedFetch('/api/summarypig', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: url, fileType: 'link' }),
@@ -77,7 +78,7 @@ export default function Gobbler() {
         setUrl("");
       } else if (mode === 'file' && file) {
         // 1. Request a presigned URL
-        const res = await fetch(`/api/presign?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`);
+        const res = await authedFetch(`/api/presign?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`);
         const { url: presignedUrl } = await res.json();
 
         if (!presignedUrl) {
@@ -98,7 +99,7 @@ export default function Gobbler() {
 
         // The file is already in S3 — send only its key and let the
         // server fetch it, instead of re-uploading the whole file.
-        const summaryRes = await fetch('/api/summarypig', {
+        const summaryRes = await authedFetch('/api/summarypig', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fileName: file.name, fileType: file.type }),

@@ -62,7 +62,7 @@ const Library = ({ user }: LibraryProps) => {
   const openBook = async (book: Book) => {
     setError('');
     try {
-      const url = await getReadUrl(user.uid, book.name);
+      const url = await getReadUrl(book.name);
       setSelectedBook({ name: book.name, url });
     } catch (err) {
       console.error('Failed to open book:', err);

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../services/firebase";
+import { authedFetch } from "../services/api";
 import { getFriendlyAuthMessage } from "../auth/utils";
 
 export default function Login() {
@@ -30,8 +31,8 @@ export default function Login() {
         }
 
         await createUserWithEmailAndPassword(auth, email, pass);
-        // Send welcome email via server
-        await fetch('/api/welcomeEmail', {
+        // Send welcome email via server (signup above signs us in, so a token exists)
+        await authedFetch('/api/welcomeEmail', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

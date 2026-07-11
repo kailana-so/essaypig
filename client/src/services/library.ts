@@ -9,6 +9,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import { authedFetch } from './api';
 
 export interface Book {
   name: string;
@@ -28,7 +29,7 @@ export const getPresignedUrl = async (userId: string, file: File): Promise<strin
     fileType: file.type || 'application/octet-stream',
     userId,
   });
-  const response = await fetch(`/api/presign?${params}`);
+  const response = await authedFetch(`/api/presign?${params}`);
   if (!response.ok) throw new Error('Failed to get presigned URL');
   const { url } = await response.json();
   return url;
@@ -52,7 +53,7 @@ export const uploadFileToS3 = async (url: string, file: File) => {
 // Best-effort: a failed summary shouldn't block the upload.
 export const summariseBook = async (userId: string, file: File): Promise<BookSummary | null> => {
   try {
-    const response = await fetch('/api/summarypig', {
+    const response = await authedFetch('/api/summarypig', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -92,9 +93,9 @@ export const listBooks = async (userId: string): Promise<Book[]> => {
   }));
 };
 
-// Get a presigned read URL for a book
-export const getReadUrl = async (userId: string, fileName: string): Promise<string> => {
-  const response = await fetch(`/api/library?${new URLSearchParams({ userId, fileName })}`);
+// Get a presigned read URL for a book (scoped to the signed-in user server-side)
+export const getReadUrl = async (fileName: string): Promise<string> => {
+  const response = await authedFetch(`/api/library?${new URLSearchParams({ fileName })}`);
   if (!response.ok) throw new Error('Failed to get book URL');
   const { url } = await response.json();
   return url;

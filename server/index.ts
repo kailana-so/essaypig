@@ -12,6 +12,7 @@ import meetRouter from './routes/meetingRedirect';
 import resourcesRouter from './routes/resources';
 import { sendNewTextNK } from './jobs/nkScheduler';
 import { test_sendNewTextNK } from './jobs/testScheduler';
+import { requireAuth } from './middleware/requireAuth';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -19,10 +20,10 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 app.use('/m', meetRouter);
-app.use('/api/presign', presignRouter);
-app.use('/api/library', libraryRouter);
-app.use('/api/summarypig', summarisepigRouter);
-app.use('/api/welcomeEmail', welcomeEmailRouter);
+app.use('/api/presign', requireAuth, presignRouter);
+app.use('/api/library', requireAuth, libraryRouter);
+app.use('/api/summarypig', requireAuth, summarisepigRouter);
+app.use('/api/welcomeEmail', requireAuth, welcomeEmailRouter);
 app.use('/api/resources', resourcesRouter);
 
 // if (process.env.NODE_ENV === 'development') {
