@@ -14,7 +14,6 @@ export const s3 = new S3Client({
   },
 });
 
-// Presigned URL for reading an object out of the bucket
 export const presignRead = (key: string, expiresIn = 3600) =>
   getSignedUrl(
     s3,

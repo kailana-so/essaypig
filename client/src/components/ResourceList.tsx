@@ -37,13 +37,12 @@ export default function ResourceList({ user }: ResourceListProps) {
       .finally(() => setLoading(false));
   }, []);
 
-  // Only texts the cron has actually sent can be opened
   const isReadable = (r: Resource) => r.active || r.completed;
 
   const openEssayReader = async (r: Resource) => {
     setError('');
 
-    // Links live on someone else's site, so they open at the source
+    // Links live elsewhere, so they open at the source
     if (r.type !== 'pdf' && r.type !== 'epub') {
       if (r.url) window.open(r.url, '_blank', 'noopener,noreferrer');
       return;

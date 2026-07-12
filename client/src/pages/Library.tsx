@@ -75,7 +75,7 @@ const Library = ({ user }: LibraryProps) => {
       setSelectedBook({ name: book.name, url });
 
       // Opening is what makes a book "currently reading". Finished books keep
-      // their tick — re-opening one shouldn't demote it.
+      // their tick
       if (statuses[book.name] !== 'finished') {
         setStatuses((current) => ({ ...current, [book.name]: 'reading' }));
       }

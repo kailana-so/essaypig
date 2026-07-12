@@ -49,9 +49,8 @@ router.post('/', async (req, res) => {
           new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: key })
         );
         const buffer = Buffer.from(await object.Body!.transformToByteArray());
-        // `max` caps how many pages pdf-parse renders. Don't try to slice pages
-        // back out of the returned text — pages are joined with '\n\n', but so
-        // are blank lines within a page, so splitting on it yields paragraphs.
+        // `max` caps the pages rendered. Don't slice pages back out of the
+        // text — blank lines use the same separator, so you get paragraphs.
         const pdfData = await pdfParse(buffer, { max: PDF_SUMMARY_PAGES });
         extractedText = pdfData.text.trim().slice(0, PDF_SUMMARY_CHAR_LIMIT);
 

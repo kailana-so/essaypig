@@ -6,9 +6,8 @@ import { RESOURCES_COLLECTION, NK_GROUP, TYPE_PDF, TYPE_EPUB } from '../utils/co
 
 const router = Router();
 
-// The fortnightly cron marks its pick `nk: true` and adds the group to
-// `current`. So `current` is this fortnight's text and `nk` without `current`
-// is one the group has already read.
+// `current` is the group's text this fortnight; `nk` without `current` is one
+// they've already read.
 const isActive = (data: FirebaseFirestore.DocumentData) =>
   ((data.current ?? []) as string[]).includes(NK_GROUP);
 
@@ -23,8 +22,7 @@ router.get('/', async (_req, res) => {
 
     const resources = snapshot.docs.map(doc => {
       const data = doc.data();
-      // Deliberately no bodyText: it holds the verbatim article text and is
-      // only ever fed to the summariser, never served to the browser.
+      // No bodyText: it holds the article verbatim and must not reach the browser
       return {
         id: doc.id,
         title: data.summary?.title ?? '',
@@ -44,8 +42,8 @@ router.get('/', async (_req, res) => {
   }
 });
 
-// Presigned read URL for an essay's file. Gobbler uploads use a flat S3 key,
-// so /api/library (which is scoped to `${uid}/library/`) can't serve these.
+// Presigned read URL for an essay's file. Essay uploads use a flat key, so the
+// per-user /api/library route can't serve them.
 router.get('/read', requireAuth, async (req, res) => {
   const { id } = req.query;
 
@@ -61,8 +59,7 @@ router.get('/read', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'No such essay' });
     }
 
-    // Only texts the group has actually been sent are readable — don't leak
-    // the ones the cron hasn't picked yet.
+    // Only texts the group has been sent are readable
     if (data.nk !== true) {
       return res.status(403).json({ error: 'Not released yet' });
     }

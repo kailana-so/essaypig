@@ -97,7 +97,7 @@ export default function Gobbler() {
         // Strip query params to get the file URL
         const s3FileUrl = presignedUrl.split('?')[0];
 
-        // The file is already in S3 — send only its key and let the
+        // send only its key and let the
         // server fetch it, instead of re-uploading the whole file.
         const summaryRes = await authedFetch('/api/summarypig', {
           method: 'POST',

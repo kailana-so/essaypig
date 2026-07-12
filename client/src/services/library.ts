@@ -95,9 +95,7 @@ export const listBooks = async (userId: string): Promise<Book[]> => {
   }));
 };
 
-// Reading state lives on the same users/{uid}/books docs that hold the EPUB
-// bookmark: a doc exists once you've opened the book, so presence means
-// "reading". Derived rather than stored, so the two can't drift apart.
+// A doc exists once the book has been opened, so presence means "reading"
 export const listBookStatuses = async (
   userId: string
 ): Promise<Record<string, ReadingStatus>> => {
@@ -110,9 +108,7 @@ export const listBookStatuses = async (
   return statuses;
 };
 
-// Record that a book has been opened. EpubViewer would eventually do this via
-// saveBookmark, but PDFs render in a plain iframe and never report a position,
-// so opening is the only signal both formats share.
+// Record that a book has been opened — the only signal PDFs and EPUBs share
 export const touchBook = async (userId: string, bookName: string) => {
   await setDoc(
     doc(db, 'users', userId, 'books', bookName),
