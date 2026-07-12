@@ -55,7 +55,22 @@ export function sendNewTextNK() {
         if (failed.length) {
           console.error('[NK] Some emails failed to send:', failed.map(f => f.email.id));
         }
-        await db.collection(RESOURCES_COLLECTION).doc(id!).update({ nk: true, current: FieldValue.arrayUnion(NK_GROUP) });
+        // Hand `current` over to the new text. Clearing every previous holder
+        // rather than just the last one also heals resources that accumulated
+        // the flag before this was fixed. The new pick can't be among them —
+        // getRandomResource only selects where nk == false.
+        const previous = await db.collection(RESOURCES_COLLECTION)
+          .where('current', 'array-contains', NK_GROUP).get();
+
+        const batch = db.batch();
+        for (const doc of previous.docs) {
+          batch.update(doc.ref, { current: FieldValue.arrayRemove(NK_GROUP) });
+        }
+        batch.update(db.collection(RESOURCES_COLLECTION).doc(id!), {
+          nk: true,
+          current: FieldValue.arrayUnion(NK_GROUP),
+        });
+        await batch.commit();
       }
     } catch (err) {
       console.error('[NK] Error running NK job:', err);

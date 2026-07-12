@@ -100,7 +100,7 @@ function App() {
               ) : (
                 showLogin && <Login />
               )}
-              <ResourceList />
+              <ResourceList user={user} />
             </>
           )}
         </main>

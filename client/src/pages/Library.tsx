@@ -7,10 +7,13 @@ import {
   addBook,
   listBooks,
   getReadUrl,
+  listBookStatuses,
+  touchBook,
+  setBookFinished,
 } from '../services/library';
-import type { Book } from '../services/library';
-import PdfViewer from '../components/PdfViewer';
-import EpubViewer from '../components/EpubViewer';
+import type { Book, ReadingStatus } from '../services/library';
+import Reader from '../components/Reader';
+import StatusIcon, { FINISHED_GLYPH } from '../components/StatusIcon';
 import '../components/ResourceList.css';
 import './Library.css';
 
@@ -20,6 +23,7 @@ interface LibraryProps {
 
 const Library = ({ user }: LibraryProps) => {
   const [books, setBooks] = useState<Book[]>([]);
+  const [statuses, setStatuses] = useState<Record<string, ReadingStatus>>({});
   const [expandedName, setExpandedName] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<{ name: string; url: string } | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -27,7 +31,12 @@ const Library = ({ user }: LibraryProps) => {
 
   const refreshBooks = useCallback(async () => {
     try {
-      setBooks(await listBooks(user.uid));
+      const [books, statuses] = await Promise.all([
+        listBooks(user.uid),
+        listBookStatuses(user.uid),
+      ]);
+      setBooks(books);
+      setStatuses(statuses);
     } catch (err) {
       console.error('Failed to load books:', err);
       setError("Couldn't fetch your books.");
@@ -64,13 +73,30 @@ const Library = ({ user }: LibraryProps) => {
     try {
       const url = await getReadUrl(book.name);
       setSelectedBook({ name: book.name, url });
+
+      // Opening is what makes a book "currently reading". Finished books keep
+      // their tick — re-opening one shouldn't demote it.
+      if (statuses[book.name] !== 'finished') {
+        setStatuses((current) => ({ ...current, [book.name]: 'reading' }));
+      }
+      await touchBook(user.uid, book.name);
     } catch (err) {
       console.error('Failed to open book:', err);
       setError("Couldn't open that one.");
     }
   };
 
-  const selectedName = selectedBook?.name.toLowerCase();
+  const toggleFinished = async (bookName: string) => {
+    const finished = statuses[bookName] !== 'finished';
+
+    setStatuses((current) => ({ ...current, [bookName]: finished ? 'finished' : 'reading' }));
+    try {
+      await setBookFinished(user.uid, bookName, finished);
+    } catch (err) {
+      console.error('Failed to save status:', err);
+      await refreshBooks();
+    }
+  };
 
   return (
     <div>
@@ -95,11 +121,12 @@ const Library = ({ user }: LibraryProps) => {
           {books.map((book) => (
             <div key={book.name}>
               <div
-                className="resource-list__item"
+                className="resource-list__item resource-list__item--status"
                 onClick={() =>
                   setExpandedName(expandedName === book.name ? null : book.name)
                 }
               >
+                <StatusIcon status={statuses[book.name]} />
                 {book.title || book.name}
               </div>
               {expandedName === book.name && (
@@ -113,16 +140,24 @@ const Library = ({ user }: LibraryProps) => {
         </div>
       </div>
 
-      {selectedBook && selectedName && (
-        <div className="book-viewer">
-          <button onClick={() => setSelectedBook(null)} className="close-button">
-            Close
+      {selectedBook && (
+        <Reader
+          kind={selectedBook.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'epub'}
+          bookmarkKey={selectedBook.name}
+          url={selectedBook.url}
+          onClose={() => setSelectedBook(null)}
+        >
+          <button
+            onClick={() => toggleFinished(selectedBook.name)}
+            className={`finished-button ${
+              statuses[selectedBook.name] === 'finished' ? 'active' : ''
+            }`}
+            aria-pressed={statuses[selectedBook.name] === 'finished'}
+            title={statuses[selectedBook.name] === 'finished' ? 'Mark as unread' : 'Mark as read'}
+          >
+            {FINISHED_GLYPH}
           </button>
-          {selectedName.endsWith('.pdf') && <PdfViewer url={selectedBook.url} />}
-          {selectedName.endsWith('.epub') && (
-            <EpubViewer url={selectedBook.url} name={selectedBook.name} />
-          )}
-        </div>
+        </Reader>
       )}
     </div>
   );

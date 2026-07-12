@@ -24,6 +24,22 @@
   font-size: 18px;
 }
 
+/* Only rows that can carry a reading status — not the "+ Add" rows,
+   which share .resource-list__item */
+.resource-list__item--status {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+/* Fixed width so titles line up whether or not the row has a glyph.
+   currentColor keeps it visible against the inverted :active background. */
+.status-icon {
+  flex: 0 0 1rem;
+  color: currentColor;
+  font-size: 15px;
+}
+
 .resource-list__synopsis {
   margin: 0.5rem 0 0.75rem 1rem;
   font-size: 15px;

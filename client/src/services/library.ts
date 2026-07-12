@@ -11,6 +11,8 @@ import {
 import { auth, db } from './firebase';
 import { authedFetch } from './api';
 
+export type ReadingStatus = 'reading' | 'finished';
+
 export interface Book {
   name: string;
   title?: string;
@@ -93,6 +95,40 @@ export const listBooks = async (userId: string): Promise<Book[]> => {
   }));
 };
 
+// Reading state lives on the same users/{uid}/books docs that hold the EPUB
+// bookmark: a doc exists once you've opened the book, so presence means
+// "reading". Derived rather than stored, so the two can't drift apart.
+export const listBookStatuses = async (
+  userId: string
+): Promise<Record<string, ReadingStatus>> => {
+  const snapshot = await getDocs(collection(db, 'users', userId, 'books'));
+
+  const statuses: Record<string, ReadingStatus> = {};
+  for (const d of snapshot.docs) {
+    statuses[d.id] = d.get('finished') === true ? 'finished' : 'reading';
+  }
+  return statuses;
+};
+
+// Record that a book has been opened. EpubViewer would eventually do this via
+// saveBookmark, but PDFs render in a plain iframe and never report a position,
+// so opening is the only signal both formats share.
+export const touchBook = async (userId: string, bookName: string) => {
+  await setDoc(
+    doc(db, 'users', userId, 'books', bookName),
+    { openedAt: serverTimestamp() },
+    { merge: true }
+  );
+};
+
+export const setBookFinished = async (
+  userId: string,
+  bookName: string,
+  finished: boolean
+) => {
+  await setDoc(doc(db, 'users', userId, 'books', bookName), { finished }, { merge: true });
+};
+
 // Get a presigned read URL for a book (scoped to the signed-in user server-side)
 export const getReadUrl = async (fileName: string): Promise<string> => {
   const response = await authedFetch(`/api/library?${new URLSearchParams({ fileName })}`);
@@ -101,12 +137,13 @@ export const getReadUrl = async (fileName: string): Promise<string> => {
   return url;
 };
 
-// Save reading position to Firestore
+// Save reading position to Firestore. Merged so a page turn doesn't wipe the
+// finished flag sharing this doc.
 export const saveBookmark = async (bookName: string, position: string) => {
   const user = auth.currentUser;
   if (!user) return;
 
-  await setDoc(doc(db, 'users', user.uid, 'books', bookName), { position });
+  await setDoc(doc(db, 'users', user.uid, 'books', bookName), { position }, { merge: true });
 };
 
 // Load reading position from Firestore

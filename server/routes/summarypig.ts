@@ -6,6 +6,7 @@ import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import pdfParse from 'pdf-parse';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
+import { PDF_SUMMARY_PAGES, PDF_SUMMARY_CHAR_LIMIT } from '../utils/constants';
 
 // Load .env from server directory (where it's created during deployment)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -48,9 +49,11 @@ router.post('/', async (req, res) => {
           new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: key })
         );
         const buffer = Buffer.from(await object.Body!.transformToByteArray());
-        const pdfData = await pdfParse(buffer);
-        const pages = pdfData.text.split('\n\n');
-        extractedText = pages.slice(0, 3).join('\n\n'); // First ~3 pages
+        // `max` caps how many pages pdf-parse renders. Don't try to slice pages
+        // back out of the returned text — pages are joined with '\n\n', but so
+        // are blank lines within a page, so splitting on it yields paragraphs.
+        const pdfData = await pdfParse(buffer, { max: PDF_SUMMARY_PAGES });
+        extractedText = pdfData.text.trim().slice(0, PDF_SUMMARY_CHAR_LIMIT);
 
       } else if (fileType === 'application/epub+zip') {
         extractedText = fileName;
