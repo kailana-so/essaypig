@@ -28,10 +28,15 @@ const PdfViewer = ({ url, name }: PdfViewerProps) => {
 
     (async () => {
       try {
-        // The viewer's stylesheet is ~228kB, so it's pulled in here rather than
-        // at module scope — no reason to ship it to people reading an EPUB
-        const [pdfjs, components, savedPage] = await Promise.all([
-          import('pdfjs-dist'),
+        // pdf_viewer.mjs has no imports of its own — it reads globalThis.pdfjsLib,
+        // which pdf.mjs sets as a side effect when it evaluates. So it has to be
+        // loaded strictly AFTER, never alongside: they end up in separate chunks
+        // and nothing else orders them.
+        const pdfjs = await import('pdfjs-dist');
+
+        // These have no such constraint. The stylesheet is ~200kB, so it stays
+        // here rather than at module scope — no reason to ship it to EPUB readers.
+        const [components, savedPage] = await Promise.all([
           import('pdfjs-dist/web/pdf_viewer.mjs'),
           loadBookmark(name).catch(() => null),
           import('pdfjs-dist/web/pdf_viewer.css'),

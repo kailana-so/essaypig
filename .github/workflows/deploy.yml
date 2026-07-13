@@ -60,6 +60,14 @@ jobs:
           yarn workspace client build
           yarn workspace server build
 
+          # nginx has no MIME type for .mjs and serves it as octet-stream, which
+          # browsers refuse to execute as a module. Catch it here, not in prod.
+          if find client/dist -name '*.mjs' | grep -q .; then
+            echo "::error::.mjs assets emitted — nginx will serve these as octet-stream"
+            find client/dist -name '*.mjs'
+            exit 1
+          fi
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
