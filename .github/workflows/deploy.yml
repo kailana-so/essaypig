@@ -39,8 +39,10 @@ jobs:
       # The droplet is a 1GB box running nginx and the server; a Vite build
       # peaks around 600MB there and gets OOM-killed. Build here instead and
       # ship the output — the droplet only ever needs to serve it.
+      # NODE_ENV is production for this job, which makes Yarn skip
+      # devDependencies — but the build needs vite, tsc and @types/*.
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --production=false
 
       - name: Build
         run: |
