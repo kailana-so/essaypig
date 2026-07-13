@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+// Let Vite bundle the worker and hand pdf.js a Worker directly. Pointing
+// workerSrc at the .mjs instead means nginx serves it as octet-stream — it has
+// no MIME type for .mjs — and the browser refuses to run it as a module.
+import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker';
 import { saveBookmark, loadBookmark } from '../services/library';
 
 interface PdfViewerProps {
@@ -34,10 +38,7 @@ const PdfViewer = ({ url, name }: PdfViewerProps) => {
         ]);
         if (cancelled) return;
 
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/build/pdf.worker.min.mjs',
-          import.meta.url
-        ).toString();
+        pdfjs.GlobalWorkerOptions.workerPort = new PdfWorker();
 
         const eventBus = new components.EventBus();
         const linkService = new components.PDFLinkService({ eventBus });
