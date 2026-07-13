@@ -29,11 +29,26 @@
   color: #fff;
 }
 
-.pdf-container {
+.pdf-wrap {
   flex: 1;
-  margin: 10px;
-  border: none;
-  width: calc(100% - 20px);
+  position: relative;
+  min-height: 0;
+}
+
+/* pdf.js positions pages against this and fits them to its width, so narrowing
+   the container is what sizes the page — no need to set a scale */
+.pdf-container {
+  position: absolute;
+  inset: 0 10%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* On a phone the page should use the full width */
+@media (max-width: 768px) {
+  .pdf-container {
+    inset: 0;
+  }
 }
 
 .epub-viewer {

@@ -6,7 +6,7 @@ export type ReaderKind = 'pdf' | 'epub';
 
 interface ReaderProps {
   kind: ReaderKind;
-  // Key the EPUB bookmark is saved under: a filename for library books, a
+  // Key the reading position is saved under: a filename for library books, a
   // resource id for essays.
   bookmarkKey: string;
   url: string;
@@ -25,7 +25,7 @@ const Reader = ({ kind, bookmarkKey, url, onClose, children }: ReaderProps) => (
       </button>
     </div>
     {kind === 'pdf' ? (
-      <PdfViewer url={url} />
+      <PdfViewer url={url} name={bookmarkKey} />
     ) : (
       <EpubViewer url={url} name={bookmarkKey} />
     )}
