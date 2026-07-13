@@ -30,6 +30,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      # The droplet is a 1GB box running nginx and the server; a Vite build
+      # peaks around 600MB there and gets OOM-killed. Build here instead and
+      # ship the output — the droplet only ever needs to serve it.
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: |
+          # Vite inlines these at build time, so they have to exist wherever
+          # the build runs — which is now here, not the droplet
+          cat > client/.env <<ENV
+          VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}
+          ENV
+
+          yarn workspace client build
+          yarn workspace server build
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
@@ -61,16 +89,6 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
-          echo "Writing frontend .env"
-          cat > client/.env <<ENV
-          VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}
-          ENV
-
           echo "Writing backend .env"
           cat > server/.env <<ENV
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -85,14 +103,29 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_KEY=${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
           ENV
 
+          # Runtime dependencies for the server. The build already happened on
+          # the runner; its output is rsynced in by the next step.
           echo "Installing dependencies..."
           yarn install --frozen-lockfile
+          EOF
 
-          echo "Building client..."
-          yarn workspace client build
+      # --delete clears out hashed asset files left by previous builds
+      - name: Ship the build
+        run: |
+          TARGET="${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}"
+          RSH="ssh -o StrictHostKeyChecking=no"
 
-          echo "Building server..."
-          yarn workspace server build
+          rsync -az --delete -e "$RSH" client/dist/ "$TARGET:/var/www/essaypig/client/dist/"
+          rsync -az --delete -e "$RSH" server/dist/ "$TARGET:/var/www/essaypig/server/dist/"
+
+      - name: Restart the server
+        run: |
+          ssh -o StrictHostKeyChecking=no -T ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }} 'bash -s' <<'EOF'
+          set -euo pipefail
+          set -x
+          trap 'echo "❌ failed at: $BASH_COMMAND"; exit 1' ERR
+
+          cd /var/www/essaypig
 
           echo "Starting server with PM2..."
           pm2 restart essaypig-server || pm2 start server/dist/index.js --name essaypig-server
