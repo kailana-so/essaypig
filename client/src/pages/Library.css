@@ -64,7 +64,8 @@
   min-height: 0;
 }
 
-.epub-nav {
+.epub-nav,
+.pdf-nav {
   display: flex;
   justify-content: center;
   gap: 10px;

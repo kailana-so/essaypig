@@ -1,9 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 // Let Vite bundle the worker and hand pdf.js a Worker directly. Pointing
 // workerSrc at the .mjs instead means nginx serves it as octet-stream — it has
 // no MIME type for .mjs — and the browser refuses to run it as a module.
 import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker';
+import type { PDFViewer } from 'pdfjs-dist/web/pdf_viewer.mjs';
 import { saveBookmark, loadBookmark } from '../services/library';
+
+// pdf.js clamps to these itself; kept here so the buttons can be disabled
+const MIN_SCALE = 0.25;
+const MAX_SCALE = 5;
+const ZOOM_STEP = 1.25;
+
+// Zoom is a reading preference, not a property of one book — keep it across
+// books and sessions, but locally: no reason to write to Firestore on a tap.
+const ZOOM_KEY = 'pdf-zoom';
 
 interface PdfViewerProps {
   url: string;
@@ -13,11 +23,31 @@ interface PdfViewerProps {
 // Mobile browsers only render the first page of a PDF in an iframe and won't
 // scroll it. Rather than hand-roll a renderer, this uses pdf.js's own viewer
 // components — the same ones behind Firefox's reader — which bring the text
-// layer, pinch-zoom and page virtualisation with them. Imported dynamically so
-// only readers who open a PDF pay for the library.
+// layer and page virtualisation with them. Imported dynamically so only readers
+// who open a PDF pay for the library.
 const PdfViewer = ({ url, name }: PdfViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<PDFViewer | null>(null);
+  const [scale, setScale] = useState(0);
   const [error, setError] = useState('');
+
+  const zoom = useCallback((factor: number) => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    const next = Math.min(Math.max(viewer.currentScale * factor, MIN_SCALE), MAX_SCALE);
+    viewer.currentScale = next;
+    localStorage.setItem(ZOOM_KEY, String(next));
+  }, []);
+
+  // Back to fitting the page across the screen
+  const resetZoom = useCallback(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    viewer.currentScaleValue = 'page-width';
+    localStorage.removeItem(ZOOM_KEY);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -53,13 +83,21 @@ const PdfViewer = ({ url, name }: PdfViewerProps) => {
           linkService,
         });
         linkService.setViewer(viewer);
+        viewerRef.current = viewer;
 
         eventBus.on('pagesinit', () => {
-          // Fit the page to the screen — the sane default on a phone
-          viewer.currentScaleValue = 'page-width';
+          const savedZoom = Number(localStorage.getItem(ZOOM_KEY));
+          // Fitting the page across the screen is the sane default, but a whole
+          // A4 page squeezed onto a phone is tiny — so a chosen zoom wins.
+          if (savedZoom) viewer.currentScale = savedZoom;
+          else viewer.currentScaleValue = 'page-width';
+
           const page = Number(savedPage);
           if (page) viewer.currentPageNumber = page;
         });
+
+        // Keeps the readout and the button states honest, however scale changed
+        eventBus.on('scalechanging', (e: { scale: number }) => setScale(e.scale));
 
         eventBus.on('pagechanging', (e: { pageNumber: number }) => {
           saveBookmark(name, String(e.pageNumber)).catch((err) =>
@@ -78,6 +116,7 @@ const PdfViewer = ({ url, name }: PdfViewerProps) => {
         linkService.setDocument(doc, null);
 
         cleanup = () => {
+          viewerRef.current = null;
           viewer.cleanup();
           loadingTask.destroy();
         };
@@ -95,14 +134,30 @@ const PdfViewer = ({ url, name }: PdfViewerProps) => {
   }, [url, name]);
 
   return (
-    <div className="pdf-wrap">
-      {error && <p className="error">{error}</p>}
-      {/* PDFViewer needs an absolutely positioned scroll container holding a
-          .pdfViewer child, which it populates itself */}
-      <div ref={containerRef} className="pdf-container">
-        <div className="pdfViewer" />
+    <>
+      <div className="pdf-wrap">
+        {error && <p className="error">{error}</p>}
+        {/* PDFViewer needs an absolutely positioned scroll container holding a
+            .pdfViewer child, which it populates itself */}
+        <div ref={containerRef} className="pdf-container">
+          <div className="pdfViewer" />
+        </div>
       </div>
-    </div>
+
+      {!error && (
+        <div className="pdf-nav">
+          <button onClick={() => zoom(1 / ZOOM_STEP)} disabled={scale <= MIN_SCALE}>
+            − zoom out
+          </button>
+          <button onClick={resetZoom} title="Fit the page to the screen">
+            {scale ? `${Math.round(scale * 100)}%` : 'fit'}
+          </button>
+          <button onClick={() => zoom(ZOOM_STEP)} disabled={scale >= MAX_SCALE}>
+            zoom in +
+          </button>
+        </div>
+      )}
+    </>
   );
 };
 
