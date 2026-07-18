@@ -4,6 +4,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
 import path from 'path';
+import { buildKey, isSafeName, resolveScope } from '../utils/keys';
 
 // Load .env from server directory (where it's created during deployment)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -19,16 +20,18 @@ const s3 = new S3Client({
 });
 
 router.get('/', async (req, res) => {
-  const { fileName, fileType, userId } = req.query;
+  const { fileName, fileType, userId, scope } = req.query;
 
   if (!fileName || !fileType) {
     return res.status(400).json({ error: 'Missing fileName or fileType' });
   }
 
-  // Library uploads are scoped per user; Gobbler uploads keep the flat key.
-  // The path always uses the verified uid, never the client-sent userId.
-  const uid = (req as AuthedRequest).uid;
-  const key = userId ? `${uid}/library/${fileName}` : (fileName as string);
+  if (typeof fileName !== 'string' || !isSafeName(fileName)) {
+    return res.status(400).json({ error: 'Invalid fileName' });
+  }
+
+  const uid = (req as AuthedRequest).uid!;
+  const key = buildKey(resolveScope(scope, userId), uid, fileName);
 
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,

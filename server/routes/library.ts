@@ -4,6 +4,7 @@ import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
 import path from 'path';
+import { buildKey, isSafeName } from '../utils/keys';
 
 // Load .env from server directory (where it's created during deployment)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -21,15 +22,15 @@ const s3 = new S3Client({
 // Returns a presigned read URL for a book in the user's library
 router.get('/', async (req, res) => {
   const { fileName } = req.query;
-  const uid = (req as AuthedRequest).uid;
+  const uid = (req as AuthedRequest).uid!;
 
-  if (!fileName) {
-    return res.status(400).json({ error: 'Missing fileName' });
+  if (!fileName || typeof fileName !== 'string' || !isSafeName(fileName)) {
+    return res.status(400).json({ error: 'Missing or invalid fileName' });
   }
 
   const command = new GetObjectCommand({
     Bucket: process.env.AWS_BUCKET_NAME,
-    Key: `${uid}/library/${fileName}`,
+    Key: buildKey('library', uid, fileName),
   });
 
   try {

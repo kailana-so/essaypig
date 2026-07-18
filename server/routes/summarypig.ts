@@ -7,6 +7,8 @@ import pdfParse from 'pdf-parse';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
 import { PDF_SUMMARY_PAGES, PDF_SUMMARY_CHAR_LIMIT } from '../utils/constants';
+import { buildKey, isSafeName, resolveScope } from '../utils/keys';
+import { assertPublicUrl } from '../utils/safeUrl';
 
 // Load .env from server directory (where it's created during deployment)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -29,6 +31,11 @@ router.post('/', async (req, res) => {
 
     // Handle plain link-based string input
     if (text && typeof text === 'string') {
+      try {
+        await assertPublicUrl(text);
+      } catch (e) {
+        return res.status(400).json({ error: (e as Error).message });
+      }
       const html = await fetch(text, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; EssayPig/1.0)' },
       }).then(r => r.text());
@@ -40,11 +47,13 @@ router.post('/', async (req, res) => {
     // and we read the file from S3 rather than accepting a re-upload.
     } else if (fileName && fileType) {
       if (fileType === 'application/pdf') {
-        // Same key scheme as the presign route: library uploads are
-        // per-user (always under the verified uid), Gobbler uploads use
-        // the flat key.
-        const uid = (req as AuthedRequest).uid;
-        const key = userId ? `${uid}/library/${fileName}` : (fileName as string);
+        // Same key scheme as the presign route — built server-side from the
+        // verified uid, never from a client-supplied key.
+        if (typeof fileName !== 'string' || !isSafeName(fileName)) {
+          return res.status(400).json({ error: 'Invalid fileName' });
+        }
+        const uid = (req as AuthedRequest).uid!;
+        const key = buildKey(resolveScope(req.body.scope, userId), uid, fileName);
         const object = await s3.send(
           new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: key })
         );
