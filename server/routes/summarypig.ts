@@ -4,11 +4,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import pdfParse from 'pdf-parse';
-import { JSDOM } from 'jsdom';
-import { Readability } from '@mozilla/readability';
 import { PDF_SUMMARY_PAGES, PDF_SUMMARY_CHAR_LIMIT } from '../utils/constants';
 import { buildKey, isSafeName, resolveScope } from '../utils/keys';
-import { assertPublicUrl } from '../utils/safeUrl';
+import { titleFromUrl } from '../utils/titleFromUrl';
 
 // Load .env from server directory (where it's created during deployment)
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -29,19 +27,11 @@ router.post('/', async (req, res) => {
 
     let extractedText = '';
 
-    // Handle plain link-based string input
+    // Link input: summarise from the link itself, never fetch the page. Many
+    // hosts sit behind bot protection, so a server-side fetch is unreliable and
+    // would let a bad link block the upload.
     if (text && typeof text === 'string') {
-      try {
-        await assertPublicUrl(text);
-      } catch (e) {
-        return res.status(400).json({ error: (e as Error).message });
-      }
-      const html = await fetch(text, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; EssayPig/1.0)' },
-      }).then(r => r.text());
-      const dom = new JSDOM(html, { url: text });
-      const article = new Readability(dom.window.document).parse();
-      extractedText = article?.textContent?.trim() ?? text;
+      extractedText = titleFromUrl(text);
 
     // Handle an already-uploaded PDF/EPUB — the client sends only the key,
     // and we read the file from S3 rather than accepting a re-upload.
