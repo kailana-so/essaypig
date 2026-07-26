@@ -112,7 +112,7 @@ jobs:
           # Runtime dependencies for the server. The build already happened on
           # the runner; its output is rsynced in by the next step.
           echo "Installing dependencies..."
-          yarn install --frozen-lockfile
+          yarn install --frozen-lockfile --ignore-engines
           EOF
 
       # --delete clears out hashed asset files left by previous builds
