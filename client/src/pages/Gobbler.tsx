@@ -64,18 +64,12 @@ export default function Gobbler() {
           body: JSON.stringify({ text: url, fileType: 'link' }),
         });
 
-        if (!summaryRes.ok) {
-          const errData = await summaryRes.json().catch(() => ({}));
-          throw new Error(errData.error || 'Summary failed');
-        }
-
-        const { summary, bodyText } = await summaryRes.json();
+        const { summary } = await summaryRes.json();
 
         setSummary([summary.title, summary.body]);
         await addDoc(collection(db, "resources"), {
           url,
           type: "link",
-          bodyText: bodyText ?? null,
           summary: summary,
           nk: false,
           created_at: serverTimestamp(),
@@ -109,11 +103,6 @@ export default function Gobbler() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fileName: file.name, fileType: file.type }),
         });
-
-        if (!summaryRes.ok) {
-          const errData = await summaryRes.json().catch(() => ({}));
-          throw new Error(errData.error || 'Summary failed');
-        }
 
         const { summary } = await summaryRes.json();
         setSummary([summary.title, summary.body]);

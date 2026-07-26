@@ -6,6 +6,8 @@ import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { titleFromUrl } from '../utils/titleFromUrl';
 import { buildKey } from '../utils/keys';
+import pdfParse from 'pdf-parse';
+import EPub from 'epub';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
@@ -17,43 +19,95 @@ const s3 = new S3Client({
   region: process.env.AWS_REGION || '',
 });
 
-const BUCKET = process.env.S3_RESOURCES_BUCKET || '';
+const BUCKET = process.env.AWS_BUCKET_NAME || '';
 
 const router = Router();
 
-async function callDeepSeek(promptText: string): Promise<string> {
-  const res = await fetch(process.env.DS_API_URL || 'https://api.deepseek.com/v1/chat/completions', {
+interface LLMQuestions {
+  question1: string;
+  question2: string;
+}
+
+interface LLMResponse {
+  title: string;
+  body: string;
+  questions: LLMQuestions;
+}
+
+async function callLLM(promptText: string): Promise<LLMResponse> {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.DS_API_KEY}`,
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
       'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://essaypig.com',
+      'X-Title': 'Essay Pig',
     },
     body: JSON.stringify({
-      model: process.env.DS_MODEL,
+      model: 'openai/gpt-4o-mini',
+      provider: { allow_fallbacks: true },
+      response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
-          content:
-            'You are a helpful summariser that returns JSON with exactly these keys: title, synopsis, readingStatus, and questions. ' +
-            '"readingStatus" MUST be one of: "later", "undecided", "current", "finished". ' +
-            'Only return the JSON object, no markdown or explanation.',
+          content: 'You love summarising texts into 1–2 sentence descriptions including the title of the text and 2 questions. Questions should be concise (max 12 words), clever or funny and raise new viewpoints on the text or author. Return JSON format with "title", "body", "questions": { "question1", "question2" } keys. Include nothing else.',
         },
         {
           role: 'user',
-          content: `Produce a one-paragraph summary of text starting with its title. Return JSON only.
-Title: "Readability scores how important it was overall"
-{ "synopsis": "", "readingStatus": "undecided", "questions": "" }. TEXTSTARTSHERE: ${promptText}`,
+          content: `Summarize this:\n\n${promptText}`,
         },
       ],
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
+      temperature: 0.5,
+      max_tokens: 200,
     }),
   });
 
-  if (!res.ok) throw new Error(`DeepSeek returned ${res.status}`);
+  if (!res.ok) throw new Error(`OpenRouter returned ${res.status}`);
 
   const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? '';
+  const content = data.choices?.[0]?.message?.content ?? '';
+  const json = JSON.parse(content);
+
+  const questions: LLMQuestions = {
+    question1: json.questions?.question1 || '',
+    question2: json.questions?.question2 || '',
+  };
+
+  return {
+    title: json.title || '',
+    body: json.body || '',
+    questions,
+  };
+}
+
+function makeFallbackSummary(title: string): LLMResponse {
+  return {
+    title,
+    body: '',
+    questions: { question1: '', question2: '' },
+  };
+}
+
+async function extractTextFromBuffer(buffer: Buffer, fileType: string): Promise<string> {
+  if (fileType === 'application/pdf') {
+    const parsed = await pdfParse(buffer);
+    return parsed.text || '';
+  }
+
+  if (fileType === 'application/epub+zip') {
+    const epub = new EPub(buffer, '', '');
+    await epub.parse();
+
+    let text = '';
+    for (const item of epub.flow) {
+      const html = await epub.getChapter(item.id);
+      const textOnly = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      text += textOnly + ' ';
+    }
+    return text.trim();
+  }
+
+  return buffer.toString('utf-8');
 }
 
 // POST /api/summarypig
@@ -64,28 +118,17 @@ router.post('/', async (req: AuthedRequest, res) => {
   // ─── LINKS ─────────────────────────────────────────────────────────
   if (isLink) {
     try {
-      const raw = await callDeepSeek(resource);
-      const json = JSON.parse(raw);
-
+      const summary = await callLLM(resource);
       res.json({
         summary: {
-          title: json.title ?? titleFromUrl(resource),
-          body: json.synopsis ?? '',
-          status: json.readingStatus ?? 'undecided',
-          questions: json.questions ?? '',
+          title: summary.title || titleFromUrl(resource),
+          body: summary.body || '',
+          questions: summary.questions,
         },
       });
     } catch (err) {
-      console.error('DeepSeek failed for link:', err);
-      // Fallback: still return 200 with slug title so the client doesn't crash
-      res.json({
-        summary: {
-          title: titleFromUrl(resource),
-          body: '',
-          status: 'undecided',
-          questions: '',
-        },
-      });
+      console.error('OpenRouter failed for link:', err);
+      res.json({ summary: makeFallbackSummary(titleFromUrl(resource)) });
     }
     return;
   }
@@ -116,27 +159,27 @@ router.post('/', async (req: AuthedRequest, res) => {
     return;
   }
 
-  const text = await response.text();
-  if (!text) {
-    res.status(500).json({ error: 'File returned by S3 is empty' });
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const text = await extractTextFromBuffer(buffer, fileType);
+
+  if (!text.trim()) {
+    res.status(500).json({ error: 'File returned by S3 is empty or could not be parsed' });
     return;
   }
 
   try {
-    const raw = await callDeepSeek(text);
-    const json = JSON.parse(raw);
-
+    const summary = await callLLM(text);
     res.json({
       summary: {
-        title: json.title ?? decodedFileName,
-        body: json.synopsis ?? '',
-        status: json.readingStatus ?? 'undecided',
-        questions: json.questions ?? '',
+        title: summary.title || decodedFileName,
+        body: summary.body || '',
+        questions: summary.questions,
       },
     });
   } catch (err) {
-    console.error('Failed to summarise text:', err);
-    res.status(500).json({ error: 'Failed to summarise text' });
+    console.error('OpenRouter failed for file:', err);
+    res.json({ summary: makeFallbackSummary(decodedFileName) });
   }
 });
 

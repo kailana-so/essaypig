@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
+    "@types/epub": "^0.2.0",
     "@types/express": "^4.17.21",
     "@types/jsdom": "^28.0.3",
     "@types/node": "^20.11.0",
