@@ -64,6 +64,11 @@ export default function Gobbler() {
           body: JSON.stringify({ text: url, fileType: 'link' }),
         });
 
+        if (!summaryRes.ok) {
+          const errData = await summaryRes.json().catch(() => ({}));
+          throw new Error(errData.error || 'Summary failed');
+        }
+
         const { summary, bodyText } = await summaryRes.json();
 
         setSummary([summary.title, summary.body]);
@@ -104,6 +109,11 @@ export default function Gobbler() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fileName: file.name, fileType: file.type }),
         });
+
+        if (!summaryRes.ok) {
+          const errData = await summaryRes.json().catch(() => ({}));
+          throw new Error(errData.error || 'Summary failed');
+        }
 
         const { summary } = await summaryRes.json();
         setSummary([summary.title, summary.body]);

@@ -3,127 +3,250 @@ import type { AuthedRequest } from '../middleware/requireAuth';
 import dotenv from 'dotenv';
 import path from 'path';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import pdfParse from 'pdf-parse';
-import { PDF_SUMMARY_PAGES, PDF_SUMMARY_CHAR_LIMIT } from '../utils/constants';
-import { buildKey, isSafeName, resolveScope } from '../utils/keys';
-import { titleFromUrl } from '../utils/titleFromUrl';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Readability } from '@mozilla/readability';
+import { JSDOM } from 'jsdom';
 
-// Load .env from server directory (where it's created during deployment)
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+import { titleFromUrl } from '../utils/titleFromUrl';
+import { assertPublicUrl } from '../utils/safeUrl';
+import { buildKey } from '../utils/keys';
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
+  region: process.env.AWS_REGION || '',
+});
+
+const BUCKET = process.env.S3_RESOURCES_BUCKET || '';
 
 const router = Router();
 
-const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
+interface SummaryResponse {
+  title: string;
+  synopsis: string;
+  status: string | null;
+  summary: string | null;
+}
 
-router.post('/', async (req, res) => {
+/**
+ * Tier 1: Fetch the page and extract readable text via Readability.
+ * Returns null on any failure (bot wall, non-HTML, timeout, etc.)
+ */
+async function tryFetchAndExtract(url: string): Promise<{ title: string; body: string } | null> {
   try {
-    const { text, fileType, fileName, userId } = req.body;
+    await assertPublicUrl(url);
 
-    let extractedText = '';
-
-    // Link input: summarise from the link itself, never fetch the page. Many
-    // hosts sit behind bot protection, so a server-side fetch is unreliable and
-    // would let a bad link block the upload.
-    if (text && typeof text === 'string') {
-      extractedText = titleFromUrl(text);
-
-    // Handle an already-uploaded PDF/EPUB — the client sends only the key,
-    // and we read the file from S3 rather than accepting a re-upload.
-    } else if (fileName && fileType) {
-      if (fileType === 'application/pdf') {
-        // Same key scheme as the presign route — built server-side from the
-        // verified uid, never from a client-supplied key.
-        if (typeof fileName !== 'string' || !isSafeName(fileName)) {
-          return res.status(400).json({ error: 'Invalid fileName' });
-        }
-        const uid = (req as AuthedRequest).uid!;
-        const key = buildKey(resolveScope(req.body.scope, userId), uid, fileName);
-        const object = await s3.send(
-          new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: key })
-        );
-        const buffer = Buffer.from(await object.Body!.transformToByteArray());
-        // `max` caps the pages rendered. Don't slice pages back out of the
-        // text — blank lines use the same separator, so you get paragraphs.
-        const pdfData = await pdfParse(buffer, { max: PDF_SUMMARY_PAGES });
-        extractedText = pdfData.text.trim().slice(0, PDF_SUMMARY_CHAR_LIMIT);
-
-      } else if (fileType === 'application/epub+zip') {
-        extractedText = fileName;
-      } else {
-        return res.status(400).json({ error: 'Unsupported file type' });
-      }
-    } else {
-      return res.status(400).json({ error: 'No valid input provided' });
-    }
-
-    const response = await fetch(`${process.env.DS_API_URL}`, {
-      method: 'POST',
+    const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${process.env.DS_API_KEY}`,
-        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
-      body: JSON.stringify({
-        model: process.env.DS_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content:
-              `You are EssayPig, a critical-thinking book club AI. 
-You write in Australian English with expert knowledge across geopolitics, ecology, history, anthropology, economics, gender, and sexuality.
+      signal: AbortSignal.timeout(15000),
+    });
 
-Given a text, return this exact JSON:
-{
-  "title": "the title of the text",
-  "body": "1–2 sentences stating the title and its main argument",
-  "questions": {
-    "question1": "a thought-provoking question of ≤12 words",
-    "question2": "a thought-provoking question of ≤12 words"
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType?.includes('text/html')) return null;
+
+    const html = await response.text();
+    if (!html.trim()) return null;
+
+    const dom = new JSDOM(html, { url });
+    const reader = new Readability(dom.window.document);
+    const article = reader.parse();
+
+    if (!article || !article.textContent || article.textContent.length < 50) return null;
+
+    return {
+      title: article.title || titleFromUrl(url),
+      body: article.textContent,
+    };
+  } catch {
+    return null;
   }
 }
 
-Each question must intersect at least two domains (e.g. ecology + economics) and push toward systemic or cross-textual thinking.
+/**
+ * Tier 2: Ask DeepSeek to summarise using the raw URL.
+ */
+async function trySummariseUrl(url: string): Promise<SummaryResponse | null> {
+  try {
+    const res = await callDeepSeek(url);
+    return parseDeepSeekResponse(res);
+  } catch {
+    return null;
+  }
+}
 
-Return JSON only. No markdown, no extra text.`,
-          },
-          {
-            role: 'user',
-            content: `Summarize this:\n\n${extractedText}`,
-          },
-        ],
-        temperature: 0.5,
-        max_tokens: 200,
-      }),
+/**
+ * Tier 3: Mechanical fallback — no LLM. Derive title from URL, empty body.
+ */
+function makeFallbackSummary(url: string): SummaryResponse {
+  return {
+    title: titleFromUrl(url),
+    synopsis: '',
+    status: null,
+    summary: null,
+  };
+}
+
+async function callDeepSeek(promptText: string): Promise<string> {
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a helpful summariser that returns JSON with exactly these keys: title, synopsis, readingStatus, and questions.' +
+            '"readingStatus" MUST be one of: "later", "undecided", "current", "finished"' +
+            'Only return the JSON object, no markdown or explanation.',
+        },
+        {
+          role: 'user',
+          content: `Produce a one-paragraph summary of text starting with its title. Return JSON only.
+Title: "Readability scores how important it was overall"
+{ "synopsis": "", "readingStatus": "undecided", "questions": "" }. TEXTSTARTSHERE: ${promptText}`,
+        },
+      ],
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!res.ok) throw new Error(`DeepSeek returned ${res.status}`);
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+function parseDeepSeekResponse(content: string): SummaryResponse {
+  const json = JSON.parse(content);
+  if (!json.title) throw new Error('Missing title in response');
+  return {
+    title: json.title,
+    synopsis: json.synopsis ?? '',
+    status: json.readingStatus ?? null,
+    summary: json.questions ?? '',
+  };
+}
+
+function resolveTitle(resource: string, fallbackTitle: string | null): string {
+  if (fallbackTitle) return fallbackTitle;
+  try {
+    new URL(resource);
+    return titleFromUrl(resource);
+  } catch {
+    return resource;
+  }
+}
+
+// POST /api/summarypig
+router.post('/', async (req: AuthedRequest, res) => {
+  const { text: resource, fileName, fileType } = req.body;
+  const isLink = fileType === 'link';
+
+  if (isLink) {
+    // ─── LINK: three-tier fallback ─────────────────────────────────────
+    let summary: SummaryResponse | null = null;
+    let bodyText: string | null = null;
+
+    // Tier 1: Fetch page, extract via Readability
+    const extracted = await tryFetchAndExtract(resource);
+    if (extracted) {
+      try {
+        const result = await callDeepSeek(extracted.body);
+        summary = parseDeepSeekResponse(result);
+        bodyText = extracted.body;
+      } catch {
+        summary = null; // Fall through to Tier 2
+      }
+    }
+
+    // Tier 2: Pass raw URL to LLM
+    if (!summary) {
+      summary = await trySummariseUrl(resource);
+    }
+
+    // Tier 3: Mechanical fallback
+    if (!summary) {
+      summary = makeFallbackSummary(resource);
+    }
+
+    const title = summary.title || resolveTitle(resource, null);
+
+    res.json({
+      summary: {
+        title,
+        body: summary.synopsis,
+        status: summary.status,
+        questions: summary.summary,
+      },
+      bodyText,
+    });
+  } else {
+    // ─── FILE: unchanged S3 pipeline ───────────────────────────────────
+    if (!fileName) {
+      res.status(400).json({ error: 'fileName is required' });
+      return;
+    }
+    if (!req.uid) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const decodedFileName = decodeURIComponent(fileName);
+    const key = buildKey('library', req.uid, decodedFileName);
+
+    const getCommand = new GetObjectCommand({ Bucket: BUCKET, Key: key });
+    const url = await getSignedUrl(s3, getCommand, { expiresIn: 300 });
+
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': fileType,
+      },
+      method: 'GET',
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      console.error('DeepSeek API error:', errText);
-      return res.status(500).json({ error: 'Failed to summarise text' });
+      res.status(500).json({ error: 'Failed to fetch file from S3' });
+      return;
     }
 
-    const data = await response.json() as any;
-    const rawContent = data.choices?.[0]?.message?.content?.trim();
-
-    const cleanContent = rawContent?.replace(/```json|```/g, '').trim();
-    let summary;
+    const text = await response.text();
+    if (!text) {
+      res.status(500).json({ error: 'File returned by S3 is empty' });
+      return;
+    }
 
     try {
-      summary = JSON.parse(cleanContent || '');
-    } catch (parseErr) {
-      console.error('Failed to parse summary content:', parseErr);
-      return res.status(500).json({ error: 'Failed to parse model response' });
-    }
+      const summaryResult = await callDeepSeek(text);
+      const json = JSON.parse(summaryResult);
 
-    return res.json({ summary, bodyText: extractedText });
-  } catch (err) {
-    console.error('Summary route error:', err);
-    return res.status(500).json({ error: 'Something went wrong' });
+      const uid = req.uid;
+
+      res.json({
+        summary: {
+          title: json.title ?? resolveTitle(resource, fileName),
+          body: json.synopsis ?? null,
+          status: json.readingStatus ?? null,
+          questions: json.questions ?? null,
+        },
+      });
+    } catch (err) {
+      console.error('Failed to summarise text:', err);
+      res.status(500).json({ error: 'Failed to summarise text' });
+    }
   }
 });
 
