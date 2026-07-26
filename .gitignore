@@ -20,3 +20,6 @@ server/node_modules/
 dist
 dist-ssr
 *.local
+
+*.md
+decisions.md

@@ -64,7 +64,11 @@ async function callLLM(promptText: string): Promise<LLMResponse> {
 
   if (!res.ok) throw new Error(`OpenRouter returned ${res.status}`);
 
-  const data = await res.json();
+  const data = (await res.json()) as {
+    choices?: Array<{
+      message?: { content?: string };
+    }>;
+  };
   const content = data.choices?.[0]?.message?.content ?? '';
   const json = JSON.parse(content);
 
